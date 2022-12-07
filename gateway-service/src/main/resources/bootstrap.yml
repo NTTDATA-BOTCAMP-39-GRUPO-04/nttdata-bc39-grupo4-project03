@@ -1,0 +1,68 @@
+#Spring cloud
+spring:
+  main:
+    web-application-type: reactive
+  application:
+    name: gateway-service
+  cloud:
+    config:
+      enabled: true
+      label: master
+      uri: http://localhost:9097
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: CUSTOMER-SERVICE
+          uri: lb://CUSTOMER-SERVICE/
+          filters: StripPrefix=1
+          predicates:
+            - Path=/customer-service/**
+
+        - id: ACCOUNT-SERVICE
+          uri: lb://ACCOUNT-SERVICE/
+          filters: StripPrefix=1
+          predicates:
+            - Path=/account-service/**
+
+        - id: MOVEMENTS-SERVICE
+          uri: lb://MOVEMENTS-SERVICE/
+          filters: StripPrefix=1
+          predicates:
+            - Path=/movements-service/**
+
+        - id: COMPOSITE-SERVICE
+          uri: lb://COMPOSITE-SERVICE/
+          filters: StripPrefix=1
+          predicates:
+            - Path=/composite-gateway/**
+
+#Eureka
+eureka:
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+---
+spring.config.activate.on-profile: docker
+server.port: 8080
+spring:
+  cloud:
+    config:
+      enabled: true
+      label: master
+      uri: http://config-server:8080
+#eureka
+eureka:
+  client:
+    fetch-registry: 'true'
+    register-with-eureka: 'true'
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    service-url:
+      defaultZone: http://eureka-server/eureka

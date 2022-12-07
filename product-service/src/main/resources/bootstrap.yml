@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: product-service
+  cloud:
+    config:
+      enabled: true
+      label: master
+      uri: http://localhost:9097
+#Eureka
+eureka:
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+#Mongo db
+spring.data.mongodb.database: product-db
+spring.data.mongodb.host: localhost
+spring.data.mongodb.port: 27017
+spring.data.mongodb.uri: mongodb://localhost/product-db
+spring.autoconfigure.exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+
+---
+spring.config.activate.on-profile: docker
+server.port: 8080
+spring:
+  cloud:
+    config:
+      enabled: true
+      label: master
+      uri: http://config-server:8080
+#eureka
+eureka:
+  client:
+    fetch-registry: 'true'
+    register-with-eureka: 'true'
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    service-url:
+      defaultZone: http://eureka-server:8080/eureka
+spring.data.mongodb.host: mongodocker
+spring.data.mongodb.uri: mongodb://mongodocker/product-db

@@ -1,0 +1,12 @@
+[2022-11-27 21:07:49] [ DEBUG] [CustomerServiceImpl:73] Error, el cliente nro: 12345545, ya esta registrado
+[2022-11-27 21:07:51] [ DEBUG] [CustomerServiceImpl:42] El cliente nro: 56345634wedw4434,no existe
+[2022-11-28 15:18:55] [ DEBUG] [CustomerServiceImpl:108] cliente nro: 48352954, actualizado correctamente, data=CustomerDto(code=null, name=CARLOS LOPEZ OBRADOR, type=null, date=null)
+[2022-11-30 09:35:01] [ DEBUG] [CustomerServiceImpl:108] cliente nro: 48352954, actualizado correctamente, data=CustomerDto(code=null, name=CARLOS LOPEZ OBRADOR, type=null, date=null)
+[2022-12-03 12:46:18] [ DEBUG] [CustomerServiceImpl:96] Error, el cliente nro: 20325117831, ya esta registrado
+[2022-12-03 12:47:17] [ DEBUG] [CustomerServiceImpl:54] El cliente nro: 12345545,no existe
+[2022-12-03 12:47:41] [ DEBUG] [CustomerServiceImpl:96] Error, el cliente nro: 48352954, ya esta registrado
+[2022-12-03 13:20:41] [ DEBUG] [CustomerServiceImpl:45] El cliente nro: 48342954,no existe
+[2022-12-03 13:21:31] [ DEBUG] [CustomerServiceImpl:45] El cliente nro: 48352955,no existe
+[2022-12-03 13:27:50] [ DEBUG] [CustomerServiceImpl:45] El cliente nro: 483529545,no existe
+[2022-12-03 13:32:21] [ DEBUG] [CustomerServiceImpl:45] El cliente nro: 483529544,no existe
+[2022-12-04 10:19:09] [ DEBUG] [CustomerServiceImpl:45] El cliente nro: 48352933,no existe

@@ -1,0 +1,3 @@
+#Ports
+server.port: 8761
+#Eureka
