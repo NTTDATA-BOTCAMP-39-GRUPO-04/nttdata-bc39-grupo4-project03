@@ -14,15 +14,15 @@ import reactor.core.publisher.Mono;
 @RestController
 @RequestMapping(value = "/product")
 public class ProductController {
-	
-	private static final Logger LOG = LoggerFactory.getLogger(ProductController.class);
-	
+
+    private static final Logger LOG = LoggerFactory.getLogger(ProductController.class);
+
     @Autowired
     private ProductService productService;
 
     @GetMapping(value = "/findAll")
     public Flux<ProductDTO> getAllProducts() {
-    	LOG.error("Error, El Producto que intenta consultar es inválido");
+        LOG.error("Error, El Producto que intenta consultar es inválido");
         return productService.getAllProducts();
     }
 
@@ -33,18 +33,16 @@ public class ProductController {
 
     @PostMapping(value = "/save")
     public Mono<ProductDTO> createProduct(@RequestBody ProductDTO body) {
-    	ProductDTO.of(body);
         return productService.createProduct(body);
     }
-    
+
     @PutMapping(value = "/update")
     public Mono<ProductDTO> updateProduct(@RequestBody ProductDTO body) {
-    	ProductDTO.of(body);
-    	return productService.updateProduct(body);
+        return productService.updateProduct(body);
     }
-    
+
     @DeleteMapping(value = "/delete/{code}")
     public Mono<Void> deleteProduct(@PathVariable(value = "code") String code) {
-    	return productService.deleteProductByCode(code);
+        return productService.deleteProductByCode(code);
     }
 }

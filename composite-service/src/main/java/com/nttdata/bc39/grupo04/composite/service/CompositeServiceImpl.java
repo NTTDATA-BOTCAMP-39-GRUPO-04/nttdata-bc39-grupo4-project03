@@ -2,6 +2,7 @@ package com.nttdata.bc39.grupo04.composite.service;
 
 import com.nttdata.bc39.grupo04.api.account.AccountDTO;
 import com.nttdata.bc39.grupo04.api.composite.*;
+import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
 import com.nttdata.bc39.grupo04.api.customer.CustomerDto;
 import com.nttdata.bc39.grupo04.api.exceptions.InvaliteInputException;
 import com.nttdata.bc39.grupo04.api.exceptions.NotFoundException;
@@ -211,6 +212,19 @@ public class CompositeServiceImpl implements CompositeService {
     @Override
     public Mono<CustomerDto> createCustomer(CustomerDto customerDto) {
         return integration.createCustomer(customerDto);
+    }
+
+
+    //Credit
+    @Override
+    public Flux<CreditDTO> getAllCreditByCustomer(String customerId) {
+        return integration.getAllCreditByCustomer(customerId);
+    }
+
+    //Product
+    @Override
+    public Mono<ProductDTO> getProductByCode(String productId) {
+        return integration.getProductByCode(productId);
     }
 
     private void validationLimitAmount(String sourceAccount, String destinationAccount,

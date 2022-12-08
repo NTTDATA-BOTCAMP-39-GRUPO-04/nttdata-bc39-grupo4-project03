@@ -2,8 +2,10 @@ package com.nttdata.bc39.grupo04.composite.controller;
 
 import com.nttdata.bc39.grupo04.api.account.AccountDTO;
 import com.nttdata.bc39.grupo04.api.composite.*;
+import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
 import com.nttdata.bc39.grupo04.api.customer.CustomerDto;
 import com.nttdata.bc39.grupo04.api.movements.MovementsReportDTO;
+import com.nttdata.bc39.grupo04.api.product.ProductDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -71,6 +73,17 @@ public class CompositeController {
                                                         @RequestParam("fechEnd") String fechEnd) {
         return service.getAllComissionByProduct(fechStart, fechEnd);
     }
-    //ismael: agregar creditos y productos.
+
+    //ismael: Credit Endpoints
+    @GetMapping(value = "/credit/customer/{customerId}")
+    Flux<CreditDTO> getAllCreditByCustomer(@PathVariable("customerId") String customerId) {
+        return service.getAllCreditByCustomer(customerId);
+    }
+
+    //product endpoints
+    @GetMapping(value = "/product/findByCode/{code}")
+    public Mono<ProductDTO> getProductByCode(@PathVariable(value = "code") String code) {
+        return service.getProductByCode(code);
+    }
 
 }
