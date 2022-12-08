@@ -71,4 +71,6 @@ public class CompositeController {
                                                         @RequestParam("fechEnd") String fechEnd) {
         return service.getAllComissionByProduct(fechStart, fechEnd);
     }
+    //ismael: agregar creditos y productos.
+
 }

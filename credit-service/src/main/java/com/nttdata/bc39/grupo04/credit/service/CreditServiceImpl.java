@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Objects;
 
+import com.nttdata.bc39.grupo04.api.credit.CreditService;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,7 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 import org.yaml.snakeyaml.constructor.DuplicateKeyException;
 
-import com.nttdata.bc39.grupo04.credit.dto.CreditDTO;
+import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
 import com.nttdata.bc39.grupo04.credit.exception.ServiceException;
 import com.nttdata.bc39.grupo04.credit.persistence.CreditEntity;
 import com.nttdata.bc39.grupo04.credit.persistence.CreditRepository;
@@ -43,7 +44,6 @@ public class CreditServiceImpl implements CreditService {
 
 	@Override
 	public Mono<CreditDTO> createCredit(CreditDTO dto) {
-		// TODO Auto-generated method stub
 		validateCreateCredit(dto);
 		CreditEntity entity = mapper.dtoToEntity(dto);
 		entity.setCreditNumber(generateCreditNumber());

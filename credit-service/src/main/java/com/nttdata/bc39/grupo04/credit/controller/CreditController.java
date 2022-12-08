@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.nttdata.bc39.grupo04.credit.dto.CreditDTO;
-import com.nttdata.bc39.grupo04.credit.service.CreditService;
+import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
+import com.nttdata.bc39.grupo04.api.credit.CreditService;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

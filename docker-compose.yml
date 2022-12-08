@@ -93,6 +93,21 @@ services:
       eureka-server:
         condition: service_started
 
+  credit-service:
+    build: credit-service
+    mem_limit: 512m
+    ports:
+      - "9094:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      mongodocker:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+
   composite-service:
     build: composite-service
     mem_limit: 512m

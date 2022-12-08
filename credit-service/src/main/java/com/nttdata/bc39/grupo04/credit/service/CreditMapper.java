@@ -4,7 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Mappings;
 
-import com.nttdata.bc39.grupo04.credit.dto.CreditDTO;
+import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
 import com.nttdata.bc39.grupo04.credit.persistence.CreditEntity;
 
 @Mapper(componentModel = "spring")
