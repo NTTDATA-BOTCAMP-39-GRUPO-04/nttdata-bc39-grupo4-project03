@@ -3,6 +3,7 @@ package com.nttdata.bc39.grupo04.composite.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nttdata.bc39.grupo04.api.account.AccountDTO;
 import com.nttdata.bc39.grupo04.api.account.AccountService;
+import com.nttdata.bc39.grupo04.api.account.DebitCardDTO;
 import com.nttdata.bc39.grupo04.api.account.HolderDTO;
 import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
 import com.nttdata.bc39.grupo04.api.credit.CreditService;
@@ -127,6 +128,11 @@ public class CompositeIntegration implements MovementsService, AccountService, C
     }
 
     //Acount
+    @Override
+    public Mono<DebitCardDTO> createDebitCard(DebitCardDTO debitCardDTO) {
+        return null;
+    }
+
     @Override
     public Mono<AccountDTO> getByAccountNumber(String accountNumber) {
         String url = urlAccountService + "/" + accountNumber;

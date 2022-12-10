@@ -1,4 +1,5 @@
 package com.nttdata.bc39.grupo04.api.account;
+
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -15,5 +16,7 @@ public interface AccountService {
     Mono<AccountDTO> makeWithdrawalAccount(double amount, String accountNumber);
 
     Mono<Void> deleteAccount(String accountNumber);
+
+    Mono<DebitCardDTO> createDebitCard(DebitCardDTO debitCardDTO);
 
 }

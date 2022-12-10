@@ -4,6 +4,7 @@ import com.nttdata.bc39.grupo04.account.persistence.AccountEntity;
 import com.nttdata.bc39.grupo04.account.persistence.AccountRepository;
 import com.nttdata.bc39.grupo04.api.account.AccountDTO;
 import com.nttdata.bc39.grupo04.api.account.AccountService;
+import com.nttdata.bc39.grupo04.api.account.DebitCardDTO;
 import com.nttdata.bc39.grupo04.api.account.HolderDTO;
 import com.nttdata.bc39.grupo04.api.credit.CreditCustomerDTO;
 import com.nttdata.bc39.grupo04.api.exceptions.BadRequestException;
@@ -22,10 +23,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 import static com.nttdata.bc39.grupo04.api.utils.Constants.*;
 
@@ -40,9 +40,53 @@ public class AccountServiceImpl implements AccountService {
         this.repository = repository;
         this.mapper = mapper;
     }
-    
-	@Autowired
-	private CreditRestCustomer creditRestCustomer;
+    @Autowired
+    private CreditRestCustomer creditRestCustomer;
+
+    @Override
+    @SuppressWarnings("all")
+    public Mono<DebitCardDTO> createDebitCard(DebitCardDTO debitCardDTO) {
+        validateCreateDebitCard(debitCardDTO);
+        Supplier<String> generateNumberDebitCard = () -> {
+            SimpleDateFormat sdf = new SimpleDateFormat("MMyyyydd");
+            return System.currentTimeMillis() + sdf.format(new Date());
+        };
+        String numberDebitCard = generateNumberDebitCard.get();
+        debitCardDTO.getAssociedAccounts().forEach(numberAccount -> {
+            AccountEntity entity = repository.findByAccount(numberAccount).block();
+            entity.setNumberDebitCard(numberDebitCard);
+            entity.setModifyDate(Calendar.getInstance().getTime());
+            repository.save(entity);
+        });
+        debitCardDTO.setNumberDebitCard(numberDebitCard);
+        debitCardDTO.setDate(Calendar.getInstance().getTime());
+        return Mono.just(debitCardDTO);
+    }
+
+    private void validateCreateDebitCard(DebitCardDTO debitCardDTO) {
+        if (Objects.isNull(debitCardDTO)) {
+            throw new InvaliteInputException("Error, el cuerpo de la solicitud es invalido");
+        }
+        if (Objects.isNull(debitCardDTO.getCustomerId())) {
+            throw new InvaliteInputException("Error, codigo de cliente invalido");
+        }
+        if (Objects.isNull(debitCardDTO.getAssociedAccounts())) {
+            throw new InvaliteInputException("Error, la lista de cuentas asociadas es invalido");
+        }
+        if (debitCardDTO.getAssociedAccounts().isEmpty()) {
+            throw new InvaliteInputException("Error, deje de asociar por lo menos 1 cuenta bancaria hacia la tarjeta de debito.");
+        }
+        debitCardDTO.getAssociedAccounts().forEach(numberAccount -> {
+            AccountEntity entity = repository.findByAccount(numberAccount).block();
+            if (Objects.isNull(entity)) {
+                throw new NotFoundException("Error, el nro de cuenta :" + numberAccount + " no existe.");
+            }
+            if (entity.getCustomerId().equals(debitCardDTO.getCustomerId())) {
+                throw new InvaliteInputException("Error, el nro de cuenta :" + numberAccount
+                        + " no corresponde al cliente nro:" + debitCardDTO.getCustomerId() + " enviado");
+            }
+        });
+    }
 
     @Override
     public Mono<AccountDTO> getByAccountNumber(String accountNumber) {
@@ -77,10 +121,7 @@ public class AccountServiceImpl implements AccountService {
             entity.setAccount(generateAccountNumber());
         }
         entity.setCreateDate(Calendar.getInstance().getTime());
-        return repository.save(entity)
-                .onErrorMap(DuplicateKeyException.class
-                        , ex -> throwDuplicateAccount(dto.getAccount()))
-                .map(mapper::entityToDto);
+        return repository.save(entity).onErrorMap(DuplicateKeyException.class, ex -> throwDuplicateAccount(dto.getAccount())).map(mapper::entityToDto);
     }
 
     RuntimeException throwDuplicateAccount(String accountNumber) {
@@ -143,26 +184,13 @@ public class AccountServiceImpl implements AccountService {
         if (Objects.isNull(dto.getCustomerId())) {
             throw new InvaliteInputException("Error, codigo de cliente invalido");
         }
-        if (dto.getCustomerId().length() != LENGHT_CODE_PERSONAL_CUSTOMER &&
-                dto.getCustomerId().length() != LENGHT_CODE_EMPRESARIAL_CUSTOMER) {
-            throw new InvaliteInputException("Error,codigo de cliente invalido, considerar el DNI("
-                    + LENGHT_CODE_PERSONAL_CUSTOMER + ") para cuentas personales" +
-                    " y el ruc(" + LENGHT_CODE_EMPRESARIAL_CUSTOMER + ") para cuentas empresariales");
+        if (dto.getCustomerId().length() != LENGHT_CODE_PERSONAL_CUSTOMER && dto.getCustomerId().length() != LENGHT_CODE_EMPRESARIAL_CUSTOMER) {
+            throw new InvaliteInputException("Error,codigo de cliente invalido, considerar el DNI(" + LENGHT_CODE_PERSONAL_CUSTOMER + ") para cuentas personales" + " y el ruc(" + LENGHT_CODE_EMPRESARIAL_CUSTOMER + ") para cuentas empresariales");
         }
 
-		if (!dto.getProductId().equals(CODE_PRODUCT_CUENTA_AHORRO)
-				&& !dto.getProductId().equals(CODE_PRODUCT_CUENTA_CORRIENTE)
-				&& !dto.getProductId().equals(CODE_PRODUCT_PLAZO_FIJO)
-				&& !dto.getProductId().equals(CODE_PRODUCT_EMPRESA_PYME_CORRIENTE)
-				&& !dto.getProductId().equals(CODE_PRODUCT_PERSONAL_VIP_AHORRO)) {
-			throw new InvaliteInputException(
-					new StringBuilder("Error, el tipo de cuenta invalida (productId), verifique los datos admitidos: ")
-							.append(CODE_PRODUCT_CUENTA_AHORRO).append(" => CUENTA DE AHORRO , ")
-							.append(CODE_PRODUCT_CUENTA_CORRIENTE).append(" => CUENTA CORRIENTE, ")
-							.append(CODE_PRODUCT_PLAZO_FIJO).append(" => PLAZO FIJO, ")
-							.append(CODE_PRODUCT_PERSONAL_VIP_AHORRO).append(" => CUENTA AHORRO VIP, ")
-							.append(CODE_PRODUCT_EMPRESA_PYME_CORRIENTE).append(" => CUENTA CORRIENTE PYME").toString());
-		}
+        if (!dto.getProductId().equals(CODE_PRODUCT_CUENTA_AHORRO) && !dto.getProductId().equals(CODE_PRODUCT_CUENTA_CORRIENTE) && !dto.getProductId().equals(CODE_PRODUCT_PLAZO_FIJO) && !dto.getProductId().equals(CODE_PRODUCT_EMPRESA_PYME_CORRIENTE) && !dto.getProductId().equals(CODE_PRODUCT_PERSONAL_VIP_AHORRO)) {
+            throw new InvaliteInputException("Error, el tipo de cuenta invalida (productId), verifique los datos admitidos: " + CODE_PRODUCT_CUENTA_AHORRO + " => CUENTA DE AHORRO , " + CODE_PRODUCT_CUENTA_CORRIENTE + " => CUENTA CORRIENTE, " + CODE_PRODUCT_PLAZO_FIJO + " => PLAZO FIJO, " + CODE_PRODUCT_PERSONAL_VIP_AHORRO + " => CUENTA AHORRO VIP, " + CODE_PRODUCT_EMPRESA_PYME_CORRIENTE + " => CUENTA CORRIENTE PYME");
+        }
 
         logger.debug("Data enviada para la creacion de cuenta, object= " + dto);
 
@@ -187,22 +215,20 @@ public class AccountServiceImpl implements AccountService {
                 logger.debug("Error, un cliente empresarial no puede tener cuentas de plazo fijo" + dto.getCustomerId());
                 throw new InvaliteInputException("Error, un cliente empresarial no puede tener cuentas de plazo fijo");
             }
-            
-			if (dto.getProductId().equals(CODE_PRODUCT_EMPRESA_PYME_CORRIENTE)) {
-				if (dto.isHasMaintenanceFee() || dto.getMaintenanceFee() != MIN_AMOUNT_MANTENANCE_FEET) {
-					throw new InvaliteInputException(
-							"Error, una cuenta PYME no debe tener comisión de mantenimiento");
-				}
-				try {
-					Flux<CreditCustomerDTO> listCreditCard =  creditRestCustomer.listCreditCardCustomer(dto.getCustomerId());
-					if(ObjectUtils.isEmpty(listCreditCard.blockFirst())) {
-						throw new NotFoundException("Error, para crear una cuenta PYME debe tener una tarjeta de crédito");
-					}
-				} catch (Exception e) {
-					// TODO: handle exception
-					throw new NotFoundException("Error, se ha producido un error al consultar tarjeta de crédito de cliente");
-				}
-			}
+
+            if (dto.getProductId().equals(CODE_PRODUCT_EMPRESA_PYME_CORRIENTE)) {
+                if (dto.isHasMaintenanceFee() || dto.getMaintenanceFee() != MIN_AMOUNT_MANTENANCE_FEET) {
+                    throw new InvaliteInputException("Error, una cuenta PYME no debe tener comisión de mantenimiento");
+                }
+                try {
+                    Flux<CreditCustomerDTO> listCreditCard = creditRestCustomer.listCreditCardCustomer(dto.getCustomerId());
+                    if (ObjectUtils.isEmpty(listCreditCard.blockFirst())) {
+                        throw new NotFoundException("Error, para crear una cuenta PYME debe tener una tarjeta de crédito");
+                    }
+                } catch (Exception e) {
+                    throw new NotFoundException("Error, se ha producido un error al consultar tarjeta de crédito de cliente");
+                }
+            }
         }
         if (dto.getCustomerId().length() == LENGHT_CODE_PERSONAL_CUSTOMER) {
             if (!Objects.isNull(dto.getHolders())) {
@@ -212,37 +238,33 @@ public class AccountServiceImpl implements AccountService {
                 throw new InvaliteInputException("Error, las cuentas personales no requieren firmante autorizados");
             }
             if (dto.getProductId().equals(CODE_PRODUCT_CUENTA_AHORRO)) {
-                AccountEntity account = repository.findAll().filter(x -> x.getProductId().equals(CODE_PRODUCT_CUENTA_AHORRO)
-                        && x.getCustomerId().equals(dto.getCustomerId())).blockFirst();
+                AccountEntity account = repository.findAll().filter(x -> x.getProductId().equals(CODE_PRODUCT_CUENTA_AHORRO) && x.getCustomerId().equals(dto.getCustomerId())).blockFirst();
                 if (account != null) {
                     logger.debug("Error, un cliente personal solo puede tener un máximo de una cuenta de ahorro, cliente:" + dto.getCustomerId());
                     throw new InvaliteInputException("Error, un cliente personal solo puede tener un máximo de una cuenta de ahorro");
                 }
             }
             if (dto.getProductId().equals(CODE_PRODUCT_CUENTA_CORRIENTE)) {
-                AccountEntity account = repository.findAll().filter(x -> x.getProductId().equals(CODE_PRODUCT_CUENTA_CORRIENTE)
-                        && x.getCustomerId().equals(dto.getCustomerId())).blockFirst();
+                AccountEntity account = repository.findAll().filter(x -> x.getProductId().equals(CODE_PRODUCT_CUENTA_CORRIENTE) && x.getCustomerId().equals(dto.getCustomerId())).blockFirst();
                 if (account != null) {
                     logger.debug("Error, un cliente personal solo puede tener un máximo de una cuenta corriente, cliente:" + dto.getCustomerId());
                     throw new InvaliteInputException("Error, un cliente personal solo puede tener un máximo de una cuenta corriente");
                 }
             }
-            
-			if (dto.getProductId().equals(CODE_PRODUCT_PERSONAL_VIP_AHORRO)) {
-				if (!dto.isHasMinAmountDailyAverage() || ObjectUtils.isEmpty(dto.getMinAmountDailyAverage())) {
-					throw new InvaliteInputException(
-							"Error, una cuenta VIP requiere un monto mínimo de promedio diario");
-				}
-				try {
-					Flux<CreditCustomerDTO> listCreditCard =  creditRestCustomer.listCreditCardCustomer(dto.getCustomerId());
-					if(ObjectUtils.isEmpty(listCreditCard.blockFirst())) {
-						throw new NotFoundException("Error, para crear una cuenta VIP debe tener una tarjeta de crédito");
-					}
-				} catch (Exception e) {
-					// TODO: handle exception
-					throw new NotFoundException("Error, se ha producido un error al consultar tarjeta de crédito de cliente");
-				}
-			}
+
+            if (dto.getProductId().equals(CODE_PRODUCT_PERSONAL_VIP_AHORRO)) {
+                if (!dto.isHasMinAmountDailyAverage() || ObjectUtils.isEmpty(dto.getMinAmountDailyAverage())) {
+                    throw new InvaliteInputException("Error, una cuenta VIP requiere un monto mínimo de promedio diario");
+                }
+                try {
+                    Flux<CreditCustomerDTO> listCreditCard = creditRestCustomer.listCreditCardCustomer(dto.getCustomerId());
+                    if (ObjectUtils.isEmpty(listCreditCard.blockFirst())) {
+                        throw new NotFoundException("Error, para crear una cuenta VIP debe tener una tarjeta de crédito");
+                    }
+                } catch (Exception e) {
+                    throw new NotFoundException("Error, se ha producido un error al consultar tarjeta de crédito de cliente");
+                }
+            }
         }
     }
 
