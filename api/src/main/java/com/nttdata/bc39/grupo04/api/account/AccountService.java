@@ -18,5 +18,8 @@ public interface AccountService {
     Mono<Void> deleteAccount(String accountNumber);
 
     Mono<DebitCardDTO> createDebitCard(DebitCardDTO debitCardDTO);
+    Mono<DebitCardNumberDTO> generateNumberDebitCard();
+
+    Flux<AccountDTO> getAllAccountByDebitCardNumber(String debitCardNumber);
 
 }

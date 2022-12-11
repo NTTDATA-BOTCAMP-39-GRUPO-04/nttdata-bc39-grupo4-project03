@@ -2,10 +2,7 @@ package com.nttdata.bc39.grupo04.account.service;
 
 import com.nttdata.bc39.grupo04.account.persistence.AccountEntity;
 import com.nttdata.bc39.grupo04.account.persistence.AccountRepository;
-import com.nttdata.bc39.grupo04.api.account.AccountDTO;
-import com.nttdata.bc39.grupo04.api.account.AccountService;
-import com.nttdata.bc39.grupo04.api.account.DebitCardDTO;
-import com.nttdata.bc39.grupo04.api.account.HolderDTO;
+import com.nttdata.bc39.grupo04.api.account.*;
 import com.nttdata.bc39.grupo04.api.credit.CreditCustomerDTO;
 import com.nttdata.bc39.grupo04.api.exceptions.BadRequestException;
 import com.nttdata.bc39.grupo04.api.exceptions.InvaliteInputException;
@@ -25,7 +22,6 @@ import reactor.core.publisher.Mono;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 
 import static com.nttdata.bc39.grupo04.api.utils.Constants.*;
 
@@ -40,6 +36,7 @@ public class AccountServiceImpl implements AccountService {
         this.repository = repository;
         this.mapper = mapper;
     }
+
     @Autowired
     private CreditRestCustomer creditRestCustomer;
 
@@ -47,20 +44,30 @@ public class AccountServiceImpl implements AccountService {
     @SuppressWarnings("all")
     public Mono<DebitCardDTO> createDebitCard(DebitCardDTO debitCardDTO) {
         validateCreateDebitCard(debitCardDTO);
-        Supplier<String> generateNumberDebitCard = () -> {
-            SimpleDateFormat sdf = new SimpleDateFormat("MMyyyydd");
-            return System.currentTimeMillis() + sdf.format(new Date());
-        };
-        String numberDebitCard = generateNumberDebitCard.get();
         debitCardDTO.getAssociedAccounts().forEach(numberAccount -> {
             AccountEntity entity = repository.findByAccount(numberAccount).block();
-            entity.setNumberDebitCard(numberDebitCard);
-            entity.setModifyDate(Calendar.getInstance().getTime());
-            repository.save(entity);
+            entity.setDebitCardNumber(debitCardDTO.getDebitCardNumber());
+            entity.setDebitCardCreationDate(Calendar.getInstance().getTime());
+            repository.save(entity).block();
         });
-        debitCardDTO.setNumberDebitCard(numberDebitCard);
-        debitCardDTO.setDate(Calendar.getInstance().getTime());
+        debitCardDTO.setDebitCardCreationDate(Calendar.getInstance().getTime());
         return Mono.just(debitCardDTO);
+    }
+
+    @Override
+    public Flux<AccountDTO> getAllAccountByDebitCardNumber(String debitCardNumber) {
+        return repository.findByDebitCardNumber(debitCardNumber).map(mapper::entityToDto);
+    }
+
+    @Override
+    public Mono<DebitCardNumberDTO> generateNumberDebitCard() {
+        Supplier<String> generateNumberDebitCard = () -> {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyddMM");
+            return sdf.format(new Date()) + System.currentTimeMillis();
+        };
+        DebitCardNumberDTO numberDebitCardDTO = new DebitCardNumberDTO(generateNumberDebitCard.get(),
+                Calendar.getInstance().getTime());
+        return Mono.just(numberDebitCardDTO);
     }
 
     private void validateCreateDebitCard(DebitCardDTO debitCardDTO) {
@@ -81,7 +88,7 @@ public class AccountServiceImpl implements AccountService {
             if (Objects.isNull(entity)) {
                 throw new NotFoundException("Error, el nro de cuenta :" + numberAccount + " no existe.");
             }
-            if (entity.getCustomerId().equals(debitCardDTO.getCustomerId())) {
+            if (!entity.getCustomerId().equals(debitCardDTO.getCustomerId())) {
                 throw new InvaliteInputException("Error, el nro de cuenta :" + numberAccount
                         + " no corresponde al cliente nro:" + debitCardDTO.getCustomerId() + " enviado");
             }

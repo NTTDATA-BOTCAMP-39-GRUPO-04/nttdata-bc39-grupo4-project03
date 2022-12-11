@@ -1,11 +1,13 @@
 package com.nttdata.bc39.grupo04.api.composite;
 
 import com.nttdata.bc39.grupo04.api.account.AccountDTO;
+import com.nttdata.bc39.grupo04.api.account.DebitCardDTO;
+import com.nttdata.bc39.grupo04.api.account.DebitCardNumberDTO;
+import com.nttdata.bc39.grupo04.api.account.DebitCardPaymentDTO;
 import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
 import com.nttdata.bc39.grupo04.api.customer.CustomerDto;
 import com.nttdata.bc39.grupo04.api.movements.MovementsReportDTO;
 import com.nttdata.bc39.grupo04.api.product.ProductDTO;
-import org.springframework.web.bind.annotation.PathVariable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -19,6 +21,12 @@ public interface CompositeService {
     Flux<MovementsReportDTO> getAllMovementsByAccount(String account);
 
     Flux<AccountDTO> getAccountAllByCustomer(String customerId);
+
+    Mono<DebitCardDTO> createDebitCard(DebitCardDTO debitCardDTO);
+
+    Mono<DebitCardPaymentDTO> paymentWithDebitCard(DebitCardPaymentDTO debitCardPaymnetDTO);
+
+    Mono<DebitCardNumberDTO> generateNumberDebitCard();
 
     Mono<AccountDTO> getAccountByNumber(String accountNumber);
 

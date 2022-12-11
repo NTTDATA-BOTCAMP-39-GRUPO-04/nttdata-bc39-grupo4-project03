@@ -13,8 +13,7 @@ public interface AccountMapper {
     AccountDTO entityToDto(AccountEntity entity);
 
     @Mappings({
-            @Mapping(target = "id", ignore = true),
-            @Mapping(target = "numberDebitCard", ignore = true)
+            @Mapping(target = "id", ignore = true)
     })
     AccountEntity dtoToEntity(AccountDTO dto);
 }

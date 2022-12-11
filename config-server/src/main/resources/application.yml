@@ -7,5 +7,5 @@ spring:
       server:
         git:
           default-label: master
-          uri: https://github.com/nelsonjaimes/nttdata-bc39-grupo4-project02
+          uri: https://github.com/nelsonjaimes/nttdata-bc39-grupo4-project03
           search-paths: config-server/config-data

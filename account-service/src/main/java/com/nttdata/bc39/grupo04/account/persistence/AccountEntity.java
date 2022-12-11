@@ -27,7 +27,8 @@ public class AccountEntity {
     private List<HolderDTO> holders;
     private List<SignatoryDTO> signatories;
     private double availableBalance;
-    private String numberDebitCard;
+    private String debitCardNumber;
+    private Date debitCardCreationDate;
     private Date createDate;
     private Date modifyDate;
 }

@@ -1,6 +1,9 @@
 package com.nttdata.bc39.grupo04.composite.service;
 
 import com.nttdata.bc39.grupo04.api.account.AccountDTO;
+import com.nttdata.bc39.grupo04.api.account.DebitCardDTO;
+import com.nttdata.bc39.grupo04.api.account.DebitCardNumberDTO;
+import com.nttdata.bc39.grupo04.api.account.DebitCardPaymentDTO;
 import com.nttdata.bc39.grupo04.api.composite.*;
 import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
 import com.nttdata.bc39.grupo04.api.customer.CustomerDto;
@@ -141,7 +144,7 @@ public class CompositeServiceImpl implements CompositeService {
         destinationMovement.setAmount(newAmount);
         destinationMovement.setComission(codesEnum == CodesEnum.TYPE_WITHDRAWL ? newComission : 0);
 
-        Mono<AccountDTO> sourceAccountMono = Mono.just(new AccountDTO());
+        Mono<AccountDTO> sourceAccountMono;
         Mono<AccountDTO> destinationAccountMono = Mono.just(new AccountDTO());
         switch (codesEnum) {
             case TYPE_DEPOSIT:
@@ -193,6 +196,37 @@ public class CompositeServiceImpl implements CompositeService {
     }
 
     @Override
+    public Mono<DebitCardDTO> createDebitCard(DebitCardDTO debitCardDTO) {
+        if (Objects.isNull(debitCardDTO)) {
+            throw new InvaliteInputException("Error, el cuerpo de solicitud es invalido");
+        }
+        if (Objects.isNull(debitCardDTO.getCustomerId())) {
+            throw new InvaliteInputException("Error, el codigo de cliente  es invalido");
+        }
+        integration.getAllCreditByCustomer(debitCardDTO.getCustomerId());
+        return integration.createDebitCard(debitCardDTO);
+    }
+
+    @Override
+    public Mono<DebitCardNumberDTO> generateNumberDebitCard() {
+        return integration.generateNumberDebitCard();
+    }
+
+    @Override
+    public Mono<DebitCardPaymentDTO> paymentWithDebitCard(DebitCardPaymentDTO debitCardPaymnetDTO) {
+        validatePaymentDebitCard(debitCardPaymnetDTO);
+        Flux<AccountDTO> associatedAccounts = integration.getAllAccountByDebitCardNumber(debitCardPaymnetDTO.getDebitCartNumber());
+        if (Objects.isNull(associatedAccounts.blockFirst())) {
+            throw new InvaliteInputException("Error, la tarjeta de debito con nro: "
+                    + debitCardPaymnetDTO.getDebitCartNumber() + " no esta asociada a ninguna cuenta bancaria");
+        }
+        // associatedAccounts.toStream().sorted((date1, dat2) -> d1.compareTo(d2)
+        //       )
+
+        return null;
+    }
+
+    @Override
     public Mono<AccountDTO> getAccountByNumber(String accountNumber) {
         integration.getByAccountNumber(accountNumber);
         return integration.getByAccountNumber(accountNumber);
@@ -225,6 +259,18 @@ public class CompositeServiceImpl implements CompositeService {
     @Override
     public Mono<ProductDTO> getProductByCode(String productId) {
         return integration.getProductByCode(productId);
+    }
+
+    private void validatePaymentDebitCard(DebitCardPaymentDTO debitCardPaymnetDTO) {
+        if (Objects.isNull(debitCardPaymnetDTO)) {
+            throw new InvaliteInputException("Error, el cuerpo de la solicitud es invalido");
+        }
+        if (Objects.isNull(debitCardPaymnetDTO.getDebitCartNumber())) {
+            throw new InvaliteInputException("Error, el numero de tarjeta de debito es invalido");
+        }
+        if (debitCardPaymnetDTO.getAmount() <= 0.0) {
+            throw new InvaliteInputException("Error, el monto debe de ser mayor a cero");
+        }
     }
 
     private void validationLimitAmount(String sourceAccount, String destinationAccount,

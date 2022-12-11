@@ -1,6 +1,6 @@
 package com.nttdata.bc39.grupo04.account.controller;
 
-import com.nttdata.bc39.grupo04.api.account.DebitCardDTO;
+import com.nttdata.bc39.grupo04.api.account.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,9 +10,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.nttdata.bc39.grupo04.api.account.AccountDTO;
-import com.nttdata.bc39.grupo04.api.account.AccountService;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -39,14 +36,12 @@ public class AccountRestController {
     }
 
     @GetMapping("/deposit/{accountNumber}")
-    Mono<AccountDTO> makeDeposit(@PathVariable(value = "accountNumber") String accountNumber,
-                                 @RequestParam(value = "amount") double amount) {
+    Mono<AccountDTO> makeDeposit(@PathVariable(value = "accountNumber") String accountNumber, @RequestParam(value = "amount") double amount) {
         return service.makeDepositAccount(amount, accountNumber);
     }
 
     @GetMapping("/withdrawal/{accountNumber}")
-    Mono<AccountDTO> makeWithdrawal(@PathVariable(value = "accountNumber") String accountNumber,
-                                    @RequestParam(value = "amount") double amount) {
+    Mono<AccountDTO> makeWithdrawal(@PathVariable(value = "accountNumber") String accountNumber, @RequestParam(value = "amount") double amount) {
         return service.makeWithdrawalAccount(amount, accountNumber);
     }
 
@@ -58,5 +53,15 @@ public class AccountRestController {
     @PostMapping("/createDebitCard")
     Mono<DebitCardDTO> createDebitCard(@RequestBody DebitCardDTO debitCardDTO) {
         return service.createDebitCard(debitCardDTO);
+    }
+
+    @GetMapping("/debitCard/{debitCardNumber}")
+    Flux<AccountDTO> getAllAccountByDebitCardNumber(@PathVariable("debitCardNumber") String debitCardNumber) {
+        return service.getAllAccountByDebitCardNumber(debitCardNumber);
+    }
+
+    @GetMapping("/generateNumberDebitCard")
+    Mono<DebitCardNumberDTO> generateNumberDebitCard() {
+        return service.generateNumberDebitCard();
     }
 }

@@ -1,10 +1,7 @@
 package com.nttdata.bc39.grupo04.composite.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nttdata.bc39.grupo04.api.account.AccountDTO;
-import com.nttdata.bc39.grupo04.api.account.AccountService;
-import com.nttdata.bc39.grupo04.api.account.DebitCardDTO;
-import com.nttdata.bc39.grupo04.api.account.HolderDTO;
+import com.nttdata.bc39.grupo04.api.account.*;
 import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
 import com.nttdata.bc39.grupo04.api.credit.CreditService;
 import com.nttdata.bc39.grupo04.api.customer.CustomerDto;
@@ -18,6 +15,7 @@ import com.nttdata.bc39.grupo04.api.movements.MovementsReportDTO;
 import com.nttdata.bc39.grupo04.api.movements.MovementsService;
 import com.nttdata.bc39.grupo04.api.product.ProductDTO;
 import com.nttdata.bc39.grupo04.api.product.ProductService;
+import com.nttdata.bc39.grupo04.api.resttemplate.RestTemplateImpl;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -118,9 +116,10 @@ public class CompositeIntegration implements MovementsService, AccountService, C
         try {
             List<MovementsReportDTO> list = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<List<MovementsReportDTO>>() {
             }).getBody();
-
-            Mono<List<MovementsReportDTO>> monoList = Mono.just(list);
-            return monoList.flatMapMany(Flux::fromIterable);
+            if (Objects.isNull(list)) {
+                throw new BadRequestException("Error, no se pudo establecer conexión con  la url:" + url);
+            }
+            return Flux.fromStream(list.stream());
         } catch (HttpClientErrorException ex) {
             logger.warn("Got exception while make CompositeIntegration::getAllMovementsByNumberAccount:  " + ex.getMessage());
             throw handleHttpClientException(ex);
@@ -130,7 +129,33 @@ public class CompositeIntegration implements MovementsService, AccountService, C
     //Acount
     @Override
     public Mono<DebitCardDTO> createDebitCard(DebitCardDTO debitCardDTO) {
-        return null;
+        String url = urlAccountService + "/createDebitCard";
+        try {
+            DebitCardDTO dto = restTemplate.postForObject(url, debitCardDTO, DebitCardDTO.class);
+            if (Objects.isNull(dto)) {
+                throw new BadRequestException("Error, no se pudo establecer conexión con  la url:" + url);
+            }
+            return Mono.just(dto);
+        } catch (HttpClientErrorException ex) {
+            logger.warn("Got exception while make CompositeIntegration::createDebitCard " + ex.getMessage());
+            throw handleHttpClientException(ex);
+        }
+    }
+
+    @Override
+    public Flux<AccountDTO> getAllAccountByDebitCardNumber(String debitCardNumber) {
+        String url = urlAccountService + "/debitCard/" + debitCardNumber;
+        RestTemplateImpl<AccountDTO> restTemplateImpl = new RestTemplateImpl<>(mapper, restTemplate, logger);
+        return restTemplateImpl.getWithReturnFlux(url,
+                "Got exception while make CompositeIntegration::getAllAccountByDebitCardNumber: ");
+    }
+
+    @Override
+    public Mono<DebitCardNumberDTO> generateNumberDebitCard() {
+        String url = urlAccountService + "/generateNumberDebitCard";
+        RestTemplateImpl<DebitCardNumberDTO> restTemplateImpl = new RestTemplateImpl<>(mapper, restTemplate, logger);
+        return restTemplateImpl.getWithReturnMono(url,DebitCardNumberDTO.class,
+                "Got exception while make CompositeIntegration::generateNumberDebitCard: ");
     }
 
     @Override
@@ -138,6 +163,9 @@ public class CompositeIntegration implements MovementsService, AccountService, C
         String url = urlAccountService + "/" + accountNumber;
         try {
             AccountDTO accountDTO = restTemplate.getForObject(url, AccountDTO.class);
+            if (Objects.isNull(accountDTO)) {
+                throw new BadRequestException("Error, no se pudo establecer conexión con  la url:" + url);
+            }
             return Mono.just(accountDTO);
         } catch (HttpClientErrorException ex) {
             logger.warn("Got exception while make getByAccountNumber " + ex.getMessage());
@@ -176,6 +204,9 @@ public class CompositeIntegration implements MovementsService, AccountService, C
         String url = urlAccountService + "/save";
         try {
             AccountDTO accountDTO = restTemplate.postForObject(url, dto, AccountDTO.class);
+            if (Objects.isNull(accountDTO)) {
+                throw new BadRequestException("Error, no se pudo establecer conexión con  la url:" + url);
+            }
             return Mono.just(accountDTO);
         } catch (HttpClientErrorException ex) {
             logger.warn("Got exception while CompositeIntegration::createAccount: " + ex.getMessage());

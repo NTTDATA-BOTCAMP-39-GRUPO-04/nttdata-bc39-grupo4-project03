@@ -5,14 +5,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.Date;
-import java.util.List;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class DebitCardDTO {
-    private String customerId;
-    private String debitCardNumber;
-    private List<String> associedAccounts;
-    private Date debitCardCreationDate;
+public class DebitCardNumberDTO {
+    private String numberDebitCard;
+    private Date date;
 }

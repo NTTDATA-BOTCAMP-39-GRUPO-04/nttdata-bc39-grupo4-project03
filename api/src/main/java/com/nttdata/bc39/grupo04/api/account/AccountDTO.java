@@ -14,12 +14,14 @@ import java.util.List;
 @AllArgsConstructor
 public class AccountDTO implements Serializable {
 
-	private static final long serialVersionUID = 3394199549879214551L;
-	private String account;
+    private static final long serialVersionUID = 3394199549879214551L;
+    private String account;
     private String productId;
     private String customerId;
     private List<HolderDTO> holders;
     private List<SignatoryDTO> signatories;
+    private String debitCardNumber;
+    private Date debitCardCreationDate;
     private double availableBalance;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createDate;
@@ -30,7 +32,7 @@ public class AccountDTO implements Serializable {
     private boolean hasMaintenanceFee;
     private double maintenanceFee;
     private int maxMovements;
-    
+
 
     public String getAccount() {
         return account;
