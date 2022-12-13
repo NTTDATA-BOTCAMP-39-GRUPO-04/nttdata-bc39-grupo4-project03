@@ -251,7 +251,7 @@ public class CompositeServiceImpl implements CompositeService {
     @Override
     public Mono<AccountDTO> createAccount(AccountDTO dto) {
         integration.getCustomerById(dto.getCustomerId());
-        this.validateCreateAccount(dto);
+        validateCreateAccount(dto);
         return integration.createAccount(dto);
     }
 
@@ -275,7 +275,6 @@ public class CompositeServiceImpl implements CompositeService {
 
     @Override
     public Flux<CreditDTO> getAllCreditByCustomer(String customerId) {
-        // TODO Auto-generated method stub
         return integration.getAllCreditByCustomer(customerId);
     }
 
@@ -286,7 +285,6 @@ public class CompositeServiceImpl implements CompositeService {
 
     @Override
     public Mono<CreditDTO> getByCreditNumber(String creditNumber) {
-        // TODO Auto-generated method stub
         return integration.getByCreditNumber(creditNumber);
     }
 
@@ -309,7 +307,6 @@ public class CompositeServiceImpl implements CompositeService {
     public Mono<Void> deleteCredit(String creditNumber) {
         return integration.deleteCredit(creditNumber);
     }
-
 
     // Product
     @Override
