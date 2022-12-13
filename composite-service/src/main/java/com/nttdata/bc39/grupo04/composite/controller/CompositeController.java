@@ -96,17 +96,75 @@ public class CompositeController {
                                                         @RequestParam("fechEnd") String fechEnd) {
         return service.getAllComissionByProduct(fechStart, fechEnd);
     }
-
-    //ismael: Credit Endpoints
+       
     @GetMapping(value = "/credit/customer/{customerId}")
     Flux<CreditDTO> getAllCreditByCustomer(@PathVariable("customerId") String customerId) {
         return service.getAllCreditByCustomer(customerId);
     }
+    
+	@GetMapping(value = "/credit/{creditNumber}")
+	Mono<CreditDTO> getByCreditNumber(@PathVariable(value = "creditNumber") String creditNumber) {
+		return service.getByCreditNumber(creditNumber);
+	}
+    
+	@PostMapping("/credit/save")
+	Mono<CreditDTO> createAccount(@RequestBody CreditDTO dto) {
+		return service.createCredit(dto);
+	}
+    
+	@PutMapping("/credit/paymentcredit/{creditNumber}")
+	Mono<CreditDTO> makePaymentCredit(@PathVariable(value = "creditNumber") String creditNumber,
+			@RequestParam(value = "amount") double amount) {
+		return service.makePaymentCredit(amount, creditNumber);
+	}
+	
+	@PutMapping("/credit/paymentcreditcard/{creditCardNumber}")
+	Mono<CreditDTO> makePaymentCreditCard(@PathVariable(value = "creditCardNumber") String creditCardNumber,
+			@RequestParam(value = "amount") double amount) {
+		return service.makePaymentCreditCard(amount, creditCardNumber);
+	}
+	
+	@PutMapping("/credit/chargecreditcard/{creditCardNumber}")
+	Mono<CreditDTO> makeChargeCredit(@PathVariable(value = "creditCardNumber") String creditCardNumber,
+			@RequestParam(value = "amount") double amount) {
+		return service.makeChargeCredit(amount, creditCardNumber);
+	}
+	
+	@DeleteMapping("/credit/{creditNumber}")
+	Mono<Void> deleteCredit(@PathVariable(value = "creditNumber") String creditNumber) {
+		return service.deleteCredit(creditNumber);
+	}
+
+	@GetMapping(value = "/credit/getcreditcardcustomer/{customerId}")
+	Flux<CreditDTO> getAllCreditCardByCustomer(@PathVariable(value = "customerId") String customerId) {
+		return service.getAllCreditCardByCustomer(customerId);
+	}
+	
 
     //product endpoints
     @GetMapping(value = "/product/findByCode/{code}")
     public Mono<ProductDTO> getProductByCode(@PathVariable(value = "code") String code) {
         return service.getProductByCode(code);
+    }
+    
+    @GetMapping(value = "/product/findAll")
+    public Flux<ProductDTO> getAllProducts() {
+        return service.getAllProducts();
+    }
+    
+    @PostMapping(value = "/product/save")
+    public Mono<ProductDTO> createProduct(@RequestBody ProductDTO body) {
+        return service.createProduct(body);
+    }
+
+    @PutMapping(value = "/product/update")
+    public Mono<ProductDTO> updateProduct(@RequestBody ProductDTO  body) {
+        return service.updateProduct(body);
+    }
+
+     @DeleteMapping(value = "/product/delete/{code}")
+    public Mono<Void> deleteProduct(@PathVariable(value = "code") String code) {
+        return service.deleteProductByCode(code);
     }
 
 }

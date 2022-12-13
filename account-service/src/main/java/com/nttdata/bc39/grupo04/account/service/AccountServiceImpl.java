@@ -234,14 +234,6 @@ public class AccountServiceImpl implements AccountService {
                 if (dto.isHasMaintenanceFee() || dto.getMaintenanceFee() != MIN_AMOUNT_MANTENANCE_FEET) {
                     throw new InvaliteInputException("Error, una cuenta PYME no debe tener comisión de mantenimiento");
                 }
-                try {
-                    Flux<CreditCustomerDTO> listCreditCard = creditRestCustomer.listCreditCardCustomer(dto.getCustomerId());
-                    if (ObjectUtils.isEmpty(listCreditCard.blockFirst())) {
-                        throw new NotFoundException("Error, para crear una cuenta PYME debe tener una tarjeta de crédito");
-                    }
-                } catch (Exception e) {
-                    throw new NotFoundException("Error, se ha producido un error al consultar tarjeta de crédito de cliente");
-                }
             }
         }
         if (dto.getCustomerId().length() == LENGHT_CODE_PERSONAL_CUSTOMER) {
@@ -269,14 +261,6 @@ public class AccountServiceImpl implements AccountService {
             if (dto.getProductId().equals(CODE_PRODUCT_PERSONAL_VIP_AHORRO)) {
                 if (!dto.isHasMinAmountDailyAverage() || ObjectUtils.isEmpty(dto.getMinAmountDailyAverage())) {
                     throw new InvaliteInputException("Error, una cuenta VIP requiere un monto mínimo de promedio diario");
-                }
-                try {
-                    Flux<CreditCustomerDTO> listCreditCard = creditRestCustomer.listCreditCardCustomer(dto.getCustomerId());
-                    if (ObjectUtils.isEmpty(listCreditCard.blockFirst())) {
-                        throw new NotFoundException("Error, para crear una cuenta VIP debe tener una tarjeta de crédito");
-                    }
-                } catch (Exception e) {
-                    throw new NotFoundException("Error, se ha producido un error al consultar tarjeta de crédito de cliente");
                 }
             }
         }

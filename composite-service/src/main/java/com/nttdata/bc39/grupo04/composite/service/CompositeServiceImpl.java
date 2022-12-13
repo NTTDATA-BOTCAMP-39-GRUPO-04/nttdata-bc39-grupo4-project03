@@ -19,15 +19,13 @@ import com.nttdata.bc39.grupo04.api.utils.DateUtils;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.util.ObjectUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.nttdata.bc39.grupo04.api.utils.Constants.*;
 
@@ -44,22 +42,17 @@ public class CompositeServiceImpl implements CompositeService {
 
     @Override
     public Mono<TransactionAtmDTO> makeDepositATM(String destinationAccountNumber, double amount) {
-        return takeTransference(ACCOUNT_NUMBER_OF_ATM,
-                destinationAccountNumber, amount, CodesEnum.TYPE_DEPOSIT);
+        return takeTransference(ACCOUNT_NUMBER_OF_ATM, destinationAccountNumber, amount, CodesEnum.TYPE_DEPOSIT);
     }
 
     @Override
     public Mono<TransactionAtmDTO> makeWithdrawnATM(String destinationAccountNumber, double amount) {
-        return takeTransference(ACCOUNT_NUMBER_OF_ATM,
-                destinationAccountNumber, amount, CodesEnum.TYPE_WITHDRAWL);
+        return takeTransference(ACCOUNT_NUMBER_OF_ATM, destinationAccountNumber, amount, CodesEnum.TYPE_WITHDRAWL);
     }
 
     @Override
     public Mono<TransactionAtmDTO> makeTransferAccount(TransactionTransferDTO body) {
-        return takeTransference(body.getSourceAccount()
-                , body.getDestinationAccount()
-                , body.getAmount()
-                , CodesEnum.TYPE_TRANSFER);
+        return takeTransference(body.getSourceAccount(), body.getDestinationAccount(), body.getAmount(), CodesEnum.TYPE_TRANSFER);
     }
 
     @Override
@@ -71,19 +64,15 @@ public class CompositeServiceImpl implements CompositeService {
         }
         List<MovementsReportDTO> movementsAllProductByCustomerList = new ArrayList<>();
         accountAllOfCustomer.forEach(account -> {
-            List<MovementsReportDTO> movementByAccount = getAllMovementsByAccount(account.getAccount())
-                    .collectList().block();
+            List<MovementsReportDTO> movementByAccount = getAllMovementsByAccount(account.getAccount()).collectList().block();
             if (!Objects.isNull(movementByAccount)) {
                 movementByAccount.forEach(item -> item.setDate(DateUtils.getDateWithFormatddMMyyyy(item.getDate())));
                 movementsAllProductByCustomerList.addAll(movementByAccount);
             }
         });
-        Map<Date, Double> avgAvailableBalanceMap = movementsAllProductByCustomerList.stream()
-                .collect(Collectors.groupingBy(MovementsReportDTO::getDate,
-                        Collectors.averagingDouble(MovementsReportDTO::getAvailableBalance)));
+        Map<Date, Double> avgAvailableBalanceMap = movementsAllProductByCustomerList.stream().collect(Collectors.groupingBy(MovementsReportDTO::getDate, Collectors.averagingDouble(MovementsReportDTO::getAvailableBalance)));
         List<AvailableAmountDailyDTO> reportList = new ArrayList<>();
-        avgAvailableBalanceMap.keySet().forEach(key -> reportList.add(new AvailableAmountDailyDTO(key,
-                avgAvailableBalanceMap.get(key))));
+        avgAvailableBalanceMap.keySet().forEach(key -> reportList.add(new AvailableAmountDailyDTO(key, avgAvailableBalanceMap.get(key))));
         return Mono.just(reportList).flatMapMany(Flux::fromIterable);
     }
 
@@ -97,28 +86,21 @@ public class CompositeServiceImpl implements CompositeService {
         if (Objects.isNull(startDate) || Objects.isNull(endDate)) {
             throw new InvaliteInputException("Error, las fechas ingresadas son invalidad , formato requerido : dd/mm/yyyy");
         }
-        Flux<MovementsReportDTO> movementsAll = integration.getAllMovements()
-                .map(movement -> {
-                    movement.setDate(DateUtils.getDateWithFormatddMMyyyy(movement.getDate()));
-                    return movement;
-                }).filter(x -> x.getDate().compareTo(startDate) >= 0 && x.getDate().compareTo(endDate) <= 0);
+        Flux<MovementsReportDTO> movementsAll = integration.getAllMovements().map(movement -> {
+            movement.setDate(DateUtils.getDateWithFormatddMMyyyy(movement.getDate()));
+            return movement;
+        }).filter(x -> x.getDate().compareTo(startDate) >= 0 && x.getDate().compareTo(endDate) <= 0);
 
-        Map<String, Double> comissionMap = movementsAll.toStream()
-                .peek(item -> item.setComission(Math.abs(item.getComission())))
-                .collect(Collectors.groupingBy(MovementsReportDTO::getProductId,
-                        Collectors.summingDouble(MovementsReportDTO::getComission)));
+        Map<String, Double> comissionMap = movementsAll.toStream().peek(item -> item.setComission(Math.abs(item.getComission()))).collect(Collectors.groupingBy(MovementsReportDTO::getProductId, Collectors.summingDouble(MovementsReportDTO::getComission)));
 
         List<ComissionReportDTO> comissionList = new ArrayList<>(List.of());
         comissionMap.keySet().forEach(key -> {
-            comissionList.add(new ComissionReportDTO(key
-                    , Constants.getNameProduct(key)
-                    , comissionMap.get(key)));
+            comissionList.add(new ComissionReportDTO(key, Constants.getNameProduct(key), comissionMap.get(key)));
         });
         return Mono.just(comissionList).flatMapMany(Flux::fromIterable);
     }
 
-    private Mono<TransactionAtmDTO> takeTransference(
-            String sourceAccountNumber, String destinationAccountNumber, double amount, CodesEnum codesEnum) {
+    private Mono<TransactionAtmDTO> takeTransference(String sourceAccountNumber, String destinationAccountNumber, double amount, CodesEnum codesEnum) {
         Mono<AccountDTO> sourceMono = integration.getByAccountNumber(sourceAccountNumber);
         Mono<AccountDTO> destinationMono = integration.getByAccountNumber(destinationAccountNumber);
         String productIdSource = Objects.requireNonNull(sourceMono.block()).getProductId();
@@ -126,8 +108,7 @@ public class CompositeServiceImpl implements CompositeService {
         logger.debug("productIdSource => " + productIdSource);
         logger.debug("productIdDestination => " + productIdDestination);
         validationLimitAmount(sourceAccountNumber, destinationAccountNumber, codesEnum, amount);
-        Flux<MovementsReportDTO> movements = integration.getAllMovementsByNumberAccount(codesEnum ==
-                CodesEnum.TYPE_TRANSFER ? sourceAccountNumber : destinationAccountNumber);
+        Flux<MovementsReportDTO> movements = integration.getAllMovementsByNumberAccount(codesEnum == CodesEnum.TYPE_TRANSFER ? sourceAccountNumber : destinationAccountNumber);
         double newAmount = amount;
         double newComission = 0;
         if (Objects.requireNonNull(movements.collectList().block()).size() >= MAX_TRANSACCION_FREE) {
@@ -219,33 +200,22 @@ public class CompositeServiceImpl implements CompositeService {
 
     @Override
     public Mono<AccountDTO> getMainAccountByDebitCardNumber(String debitCardNumber) {
-        Supplier<Flux<AccountDTO>> associatedAccountsSupplier =
-                () -> integration.getAllAccountByDebitCardNumber(debitCardNumber);
+        Supplier<Flux<AccountDTO>> associatedAccountsSupplier = () -> integration.getAllAccountByDebitCardNumber(debitCardNumber);
         if (Objects.isNull(associatedAccountsSupplier.get().blockFirst())) {
-            throw new InvaliteInputException("Error, la tarjeta de debito con nro: "
-                    + debitCardNumber + " no esta asociada a ninguna cuenta bancaria");
+            throw new InvaliteInputException("Error, la tarjeta de debito con nro: " + debitCardNumber + " no esta asociada a ninguna cuenta bancaria");
         }
-        return Mono.just(associatedAccountsSupplier.get()
-                .toStream()
-                .sorted(Comparator.comparing(AccountDTO::getDebitCardCreationDate))
-                .collect(Collectors.toList())
-                .get(0));
+        return Mono.just(associatedAccountsSupplier.get().toStream().sorted(Comparator.comparing(AccountDTO::getDebitCardCreationDate)).collect(Collectors.toList()).get(0));
     }
 
     @Override
     public Mono<DebitCardPaymentDTO> paymentWithDebitCard(DebitCardPaymentDTO debitCardPaymnetDTO) {
         validatePaymentDebitCard(debitCardPaymnetDTO);
-        Supplier<Flux<AccountDTO>> associatedAccountsSupplier =
-                () -> integration.getAllAccountByDebitCardNumber(debitCardPaymnetDTO.getDebitCartNumber());
+        Supplier<Flux<AccountDTO>> associatedAccountsSupplier = () -> integration.getAllAccountByDebitCardNumber(debitCardPaymnetDTO.getDebitCartNumber());
         if (Objects.isNull(associatedAccountsSupplier.get().blockFirst())) {
-            throw new InvaliteInputException("Error, la tarjeta de debito con nro: "
-                    + debitCardPaymnetDTO.getDebitCartNumber() + " no esta asociada a ninguna cuenta bancaria");
+            throw new InvaliteInputException("Error, la tarjeta de debito con nro: " + debitCardPaymnetDTO.getDebitCartNumber() + " no esta asociada a ninguna cuenta bancaria");
         }
         int index = 0;
-        List<AccountDTO> associatedAccountsList = associatedAccountsSupplier.get()
-                .toStream()
-                .sorted(Comparator.comparing(AccountDTO::getDebitCardCreationDate))
-                .collect(Collectors.toList());
+        List<AccountDTO> associatedAccountsList = associatedAccountsSupplier.get().toStream().sorted(Comparator.comparing(AccountDTO::getDebitCardCreationDate)).collect(Collectors.toList());
         for (AccountDTO account : associatedAccountsList) {
             index++;
             String sourceAccount = account.getAccount();
@@ -281,6 +251,7 @@ public class CompositeServiceImpl implements CompositeService {
     @Override
     public Mono<AccountDTO> createAccount(AccountDTO dto) {
         integration.getCustomerById(dto.getCustomerId());
+        this.validateCreateAccount(dto);
         return integration.createAccount(dto);
     }
 
@@ -294,17 +265,76 @@ public class CompositeServiceImpl implements CompositeService {
         return integration.createCustomer(customerDto);
     }
 
+    // Credit
 
-    //Credit
+    @Override
+    public Mono<CreditDTO> createCredit(CreditDTO dto) {
+        integration.getCustomerById(dto.getCustomerId());
+        return integration.createCredit(dto);
+    }
+
     @Override
     public Flux<CreditDTO> getAllCreditByCustomer(String customerId) {
+        // TODO Auto-generated method stub
         return integration.getAllCreditByCustomer(customerId);
     }
 
-    //Product
+    @Override
+    public Flux<CreditDTO> getAllCreditCardByCustomer(String customerId) {
+        return integration.getAllCreditCardByCustomer(customerId);
+    }
+
+    @Override
+    public Mono<CreditDTO> getByCreditNumber(String creditNumber) {
+        // TODO Auto-generated method stub
+        return integration.getByCreditNumber(creditNumber);
+    }
+
+    @Override
+    public Mono<CreditDTO> makePaymentCredit(double amount, String creditNumber) {
+        return integration.makePaymentCredit(amount, creditNumber);
+    }
+
+    @Override
+    public Mono<CreditDTO> makePaymentCreditCard(double amount, String creditCardNumber) {
+        return integration.makePaymentCreditCard(amount, creditCardNumber);
+    }
+
+    @Override
+    public Mono<CreditDTO> makeChargeCredit(double amount, String creditCardNumber) {
+        return integration.makeChargeCredit(amount, creditCardNumber);
+    }
+
+    @Override
+    public Mono<Void> deleteCredit(String creditNumber) {
+        return integration.deleteCredit(creditNumber);
+    }
+
+
+    // Product
     @Override
     public Mono<ProductDTO> getProductByCode(String productId) {
         return integration.getProductByCode(productId);
+    }
+
+    @Override
+    public Flux<ProductDTO> getAllProducts() {
+        return integration.getAllProducts();
+    }
+
+    @Override
+    public Mono<ProductDTO> createProduct(ProductDTO dto) {
+        return integration.createProduct(dto);
+    }
+
+    @Override
+    public Mono<ProductDTO> updateProduct(ProductDTO dto) {
+        return integration.updateProduct(dto);
+    }
+
+    @Override
+    public Mono<Void> deleteProductByCode(String code) {
+        return integration.deleteProductByCode(code);
     }
 
     private void validatePaymentDebitCard(DebitCardPaymentDTO debitCardPaymnetDTO) {
@@ -319,34 +349,45 @@ public class CompositeServiceImpl implements CompositeService {
         }
     }
 
-    private void validationLimitAmount(String sourceAccount, String destinationAccount,
-                                       CodesEnum codesEnum, double amount) {
+    private void validationLimitAmount(String sourceAccount, String destinationAccount, CodesEnum codesEnum, double amount) {
 
         switch (codesEnum) {
             case TYPE_DEPOSIT:
                 if (amount < MIN_DEPOSIT_AMOUNT || amount > MAX_DEPOSIT_AMOUNT) {
                     logger.debug("Error, limites de deposita hacia la cuenta nro:" + destinationAccount + " ,amount: " + amount);
-                    throw new NotFoundException(String.format(Locale.getDefault(),
-                            "Error, limites de monto de operacion , cuenta nro: " + destinationAccount + " (min: %d PEN y max: %d PEN) ",
-                            MIN_DEPOSIT_AMOUNT, MAX_DEPOSIT_AMOUNT));
+                    throw new NotFoundException(String.format(Locale.getDefault(), "Error, limites de monto de operacion , cuenta nro: " + destinationAccount + " (min: %d PEN y max: %d PEN) ", MIN_DEPOSIT_AMOUNT, MAX_DEPOSIT_AMOUNT));
                 }
                 break;
             case TYPE_WITHDRAWL:
                 if (amount < MIN_WITHDRAWAL_AMOUNT || amount > MAX_WITHDRAWAL_AMOUNT) {
                     logger.debug("Error,  limites de retiro  en cuenta nro: " + destinationAccount + " ,monto: " + amount);
-                    throw new NotFoundException(String.format(Locale.getDefault(),
-                            "Error, limites de monto de operacion , cuenta nro:" + destinationAccount + " (min: %d PEN y max: %d PEN)",
-                            MIN_WITHDRAWAL_AMOUNT, MAX_WITHDRAWAL_AMOUNT));
+                    throw new NotFoundException(String.format(Locale.getDefault(), "Error, limites de monto de operacion , cuenta nro:" + destinationAccount + " (min: %d PEN y max: %d PEN)", MIN_WITHDRAWAL_AMOUNT, MAX_WITHDRAWAL_AMOUNT));
                 }
                 break;
             case TYPE_TRANSFER:
                 if (amount < MIN_TRANSFERENCE_AMOUNT || amount > MAX_TRANSFERENCE_AMOUNT) {
                     logger.debug("Error,  limites de transferencia ,  amount: " + amount);
-                    throw new NotFoundException(String.format(Locale.getDefault(),
-                            "Error, limites de monto de operacion , cuenta nro: " + sourceAccount + " (min: %d PEN y max: %d PEN)",
-                            MIN_TRANSFERENCE_AMOUNT, MAX_TRANSFERENCE_AMOUNT));
+                    throw new NotFoundException(String.format(Locale.getDefault(), "Error, limites de monto de operacion , cuenta nro: " + sourceAccount + " (min: %d PEN y max: %d PEN)", MIN_TRANSFERENCE_AMOUNT, MAX_TRANSFERENCE_AMOUNT));
                 }
                 break;
         }
     }
+
+    private void validateCreateAccount(AccountDTO dto) {
+        if (dto.getProductId().equals(CODE_PRODUCT_PERSONAL_VIP_AHORRO)) {
+            Flux<CreditDTO> listCreditCard = integration.getAllCreditCardByCustomer(dto.getCustomerId());
+            if (ObjectUtils.isEmpty(listCreditCard.blockFirst())) {
+                throw new NotFoundException("Error, para crear una cuenta VIP debe tener una tarjeta de crédito");
+            }
+        }
+
+        if (dto.getProductId().equals(CODE_PRODUCT_EMPRESA_PYME_CORRIENTE)) {
+            Flux<CreditDTO> listCreditCard = integration.getAllCreditCardByCustomer(dto.getCustomerId());
+            if (ObjectUtils.isEmpty(listCreditCard.blockFirst())) {
+                throw new NotFoundException("Error, para crear una cuenta PYME debe tener una tarjeta de crédito");
+            }
+
+        }
+    }
+
 }

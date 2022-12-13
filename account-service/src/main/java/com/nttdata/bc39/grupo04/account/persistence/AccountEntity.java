@@ -31,4 +31,9 @@ public class AccountEntity {
     private Date debitCardCreationDate;
     private Date createDate;
     private Date modifyDate;
+    private boolean hasMinAmountDailyAverage;
+    private double minAmountDailyAverage;
+    private boolean hasMaintenanceFee;
+    private double maintenanceFee;
+    private int maxMovements;
 }
