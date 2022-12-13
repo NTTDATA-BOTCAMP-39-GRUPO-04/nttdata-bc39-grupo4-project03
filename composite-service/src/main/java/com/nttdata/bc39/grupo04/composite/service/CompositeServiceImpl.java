@@ -232,7 +232,7 @@ public class CompositeServiceImpl implements CompositeService {
                     if (NotFoundException.class.equals(ex.getClass())) {
                         throw new NotFoundException(ex.getMessage());
                     } else if (BadRequestException.class.equals(ex.getClass())) {
-                        throw new NotFoundException(ex.getMessage());
+                        throw new BadRequestException(ex.getMessage());
                     } else {
                         throw new InvaliteInputException(ex.getMessage());
                     }
