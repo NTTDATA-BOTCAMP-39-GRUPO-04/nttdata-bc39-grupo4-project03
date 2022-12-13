@@ -3,6 +3,7 @@ package com.nttdata.bc39.grupo04.composite.controller;
 import com.nttdata.bc39.grupo04.api.account.AccountDTO;
 import com.nttdata.bc39.grupo04.api.account.DebitCardDTO;
 import com.nttdata.bc39.grupo04.api.account.DebitCardNumberDTO;
+import com.nttdata.bc39.grupo04.api.account.DebitCardPaymentDTO;
 import com.nttdata.bc39.grupo04.api.composite.*;
 import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
 import com.nttdata.bc39.grupo04.api.customer.CustomerDto;
@@ -49,14 +50,27 @@ public class CompositeController {
     Mono<AccountDTO> getAccountByNumber(@PathVariable(value = "accountNumber") String accountNumber) {
         return service.getAccountByNumber(accountNumber);
     }
-    @PostMapping("/account/createDebitCard")
-    Mono<DebitCardDTO> createDebitCard(@RequestBody DebitCardDTO  debitCardDTO){
-        return  service.createDebitCard(debitCardDTO);
+
+    @PostMapping("/account/debitCard/associatedWithAccounts")
+    Mono<DebitCardDTO> createDebitCard(@RequestBody DebitCardDTO debitCardDTO) {
+        return service.createDebitCard(debitCardDTO);
     }
-    @GetMapping("/account/generateNumberDebitCard")
-    Mono<DebitCardNumberDTO> generateNumberDebitCard(){
-            return service.generateNumberDebitCard();
+
+    @GetMapping("/account/debitCard/generateNumber")
+    Mono<DebitCardNumberDTO> generateNumberDebitCard() {
+        return service.generateNumberDebitCard();
     }
+
+    @PostMapping("/account/debitCard/payment")
+    Mono<DebitCardPaymentDTO> paymentDebitCard(@RequestBody DebitCardPaymentDTO body) {
+        return service.paymentWithDebitCard(body);
+    }
+
+    @GetMapping("/account/debitCard/main/{debitCardNumber}")
+    Mono<AccountDTO> getMainAccountByDebitCardNumber(@PathVariable("debitCardNumber") String debitCardNumber){
+        return service.getMainAccountByDebitCardNumber(debitCardNumber);
+    }
+
     @PostMapping("/account/save")
     Mono<AccountDTO> createAccount(@RequestBody AccountDTO dto) {
         return service.createAccount(dto);

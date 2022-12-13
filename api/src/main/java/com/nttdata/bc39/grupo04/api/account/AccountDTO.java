@@ -1,6 +1,5 @@
 package com.nttdata.bc39.grupo04.api.account;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,18 +22,11 @@ public class AccountDTO implements Serializable {
     private String debitCardNumber;
     private Date debitCardCreationDate;
     private double availableBalance;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createDate;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date modifyDate;
     private boolean hasMinAmountDailyAverage;
     private double minAmountDailyAverage;
     private boolean hasMaintenanceFee;
     private double maintenanceFee;
     private int maxMovements;
-
-
-    public String getAccount() {
-        return account;
-    }
 }

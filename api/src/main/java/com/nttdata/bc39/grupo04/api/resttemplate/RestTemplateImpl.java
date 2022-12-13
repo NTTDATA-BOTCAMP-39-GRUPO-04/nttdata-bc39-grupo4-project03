@@ -1,8 +1,6 @@
 package com.nttdata.bc39.grupo04.api.resttemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nttdata.bc39.grupo04.api.account.AccountDTO;
-import com.nttdata.bc39.grupo04.api.account.DebitCardNumberDTO;
 import com.nttdata.bc39.grupo04.api.exceptions.BadRequestException;
 import com.nttdata.bc39.grupo04.api.exceptions.HttpErrorInfo;
 import com.nttdata.bc39.grupo04.api.exceptions.InvaliteInputException;
@@ -39,7 +37,7 @@ public class RestTemplateImpl<T> {
             if (Objects.isNull(list)) {
                 throw new BadRequestException("Error, no se pudo establecer conexión con  la url:" + url);
             }
-            return Flux.fromStream(list.stream());
+            return Mono.just(list).flatMapMany(Flux::fromIterable);
         } catch (HttpClientErrorException ex) {
             logger.warn(loggerMessage + ex.getMessage());
             throw handleHttpClientException(ex);

@@ -7,6 +7,7 @@ import com.nttdata.bc39.grupo04.api.account.DebitCardPaymentDTO;
 import com.nttdata.bc39.grupo04.api.composite.*;
 import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
 import com.nttdata.bc39.grupo04.api.customer.CustomerDto;
+import com.nttdata.bc39.grupo04.api.exceptions.BadRequestException;
 import com.nttdata.bc39.grupo04.api.exceptions.InvaliteInputException;
 import com.nttdata.bc39.grupo04.api.exceptions.NotFoundException;
 import com.nttdata.bc39.grupo04.api.movements.MovementsDTO;
@@ -18,11 +19,15 @@ import com.nttdata.bc39.grupo04.api.utils.DateUtils;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.nttdata.bc39.grupo04.api.utils.Constants.*;
 
@@ -213,17 +218,58 @@ public class CompositeServiceImpl implements CompositeService {
     }
 
     @Override
+    public Mono<AccountDTO> getMainAccountByDebitCardNumber(String debitCardNumber) {
+        Supplier<Flux<AccountDTO>> associatedAccountsSupplier =
+                () -> integration.getAllAccountByDebitCardNumber(debitCardNumber);
+        if (Objects.isNull(associatedAccountsSupplier.get().blockFirst())) {
+            throw new InvaliteInputException("Error, la tarjeta de debito con nro: "
+                    + debitCardNumber + " no esta asociada a ninguna cuenta bancaria");
+        }
+        return Mono.just(associatedAccountsSupplier.get()
+                .toStream()
+                .sorted(Comparator.comparing(AccountDTO::getDebitCardCreationDate))
+                .collect(Collectors.toList())
+                .get(0));
+    }
+
+    @Override
     public Mono<DebitCardPaymentDTO> paymentWithDebitCard(DebitCardPaymentDTO debitCardPaymnetDTO) {
         validatePaymentDebitCard(debitCardPaymnetDTO);
-        Flux<AccountDTO> associatedAccounts = integration.getAllAccountByDebitCardNumber(debitCardPaymnetDTO.getDebitCartNumber());
-        if (Objects.isNull(associatedAccounts.blockFirst())) {
+        Supplier<Flux<AccountDTO>> associatedAccountsSupplier =
+                () -> integration.getAllAccountByDebitCardNumber(debitCardPaymnetDTO.getDebitCartNumber());
+        if (Objects.isNull(associatedAccountsSupplier.get().blockFirst())) {
             throw new InvaliteInputException("Error, la tarjeta de debito con nro: "
                     + debitCardPaymnetDTO.getDebitCartNumber() + " no esta asociada a ninguna cuenta bancaria");
         }
-        // associatedAccounts.toStream().sorted((date1, dat2) -> d1.compareTo(d2)
-        //       )
-
-        return null;
+        int index = 0;
+        List<AccountDTO> associatedAccountsList = associatedAccountsSupplier.get()
+                .toStream()
+                .sorted(Comparator.comparing(AccountDTO::getDebitCardCreationDate))
+                .collect(Collectors.toList());
+        for (AccountDTO account : associatedAccountsList) {
+            index++;
+            String sourceAccount = account.getAccount();
+            TransactionTransferDTO transferenceDTO = new TransactionTransferDTO();
+            transferenceDTO.setSourceAccount(sourceAccount);
+            transferenceDTO.setDestinationAccount(ACCOUNT_NUMBER_OF_ATM);
+            transferenceDTO.setAmount(debitCardPaymnetDTO.getAmount());
+            try {
+                makeTransferAccount(transferenceDTO);
+                debitCardPaymnetDTO.setChargeAccountNumber(account.getAccount());
+                break;
+            } catch (RuntimeException ex) {
+                if (index == associatedAccountsList.size()) {
+                    if (NotFoundException.class.equals(ex.getClass())) {
+                        throw new NotFoundException(ex.getMessage());
+                    } else if (BadRequestException.class.equals(ex.getClass())) {
+                        throw new NotFoundException(ex.getMessage());
+                    } else {
+                        throw new InvaliteInputException(ex.getMessage());
+                    }
+                }
+            }
+        }
+        return Mono.just(debitCardPaymnetDTO);
     }
 
     @Override

@@ -25,6 +25,7 @@ public interface CompositeService {
     Mono<DebitCardDTO> createDebitCard(DebitCardDTO debitCardDTO);
 
     Mono<DebitCardPaymentDTO> paymentWithDebitCard(DebitCardPaymentDTO debitCardPaymnetDTO);
+    Mono<AccountDTO> getMainAccountByDebitCardNumber(String debitCardNumber);
 
     Mono<DebitCardNumberDTO> generateNumberDebitCard();
 

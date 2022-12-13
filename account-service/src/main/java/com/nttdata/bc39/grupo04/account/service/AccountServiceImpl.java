@@ -46,9 +46,11 @@ public class AccountServiceImpl implements AccountService {
         validateCreateDebitCard(debitCardDTO);
         debitCardDTO.getAssociedAccounts().forEach(numberAccount -> {
             AccountEntity entity = repository.findByAccount(numberAccount).block();
-            entity.setDebitCardNumber(debitCardDTO.getDebitCardNumber());
-            entity.setDebitCardCreationDate(Calendar.getInstance().getTime());
-            repository.save(entity).block();
+            if (Objects.isNull(entity.getDebitCardNumber())) {
+                entity.setDebitCardNumber(debitCardDTO.getDebitCardNumber());
+                entity.setDebitCardCreationDate(Calendar.getInstance().getTime());
+                repository.save(entity).block();
+            }
         });
         debitCardDTO.setDebitCardCreationDate(Calendar.getInstance().getTime());
         return Mono.just(debitCardDTO);
@@ -125,7 +127,12 @@ public class AccountServiceImpl implements AccountService {
         if (!Objects.isNull(dto.getAccount()) && dto.getAccount().equals(ACCOUNT_NUMBER_OF_ATM)) {
             entity.setAccount(ACCOUNT_NUMBER_OF_ATM);
         } else {
-            entity.setAccount(generateAccountNumber());
+            Supplier<String> generateAccountNumberSupplier = () -> {
+                Date todayDate = new Date();
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+                return "1"+sdf.format(todayDate) + System.currentTimeMillis();
+            };
+            entity.setAccount(generateAccountNumberSupplier.get());
         }
         entity.setCreateDate(Calendar.getInstance().getTime());
         return repository.save(entity).onErrorMap(DuplicateKeyException.class, ex -> throwDuplicateAccount(dto.getAccount())).map(mapper::entityToDto);
@@ -273,11 +280,5 @@ public class AccountServiceImpl implements AccountService {
                 }
             }
         }
-    }
-
-    private String generateAccountNumber() {
-        Date todayDate = new Date();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
-        return System.currentTimeMillis() + sdf.format(todayDate);
     }
 }
