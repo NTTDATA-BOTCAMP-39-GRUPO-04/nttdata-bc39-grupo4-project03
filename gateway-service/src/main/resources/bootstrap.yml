@@ -39,6 +39,18 @@ spring:
           predicates:
             - Path=/composite-gateway/**
 
+        - id:   CREDIT-SERVICE
+          uri: lb://CREDIT-SERVICE/
+          filters: StripPrefix=1
+          predicates:
+            - Path=/credit-service/**
+            
+        - id:   PRODUCT-SERVICE
+          uri: lb://PRODUCT-SERVICE/
+          filters: StripPrefix=1
+          predicates:
+            - Path=/product-service/**
+
 #Eureka
 eureka:
   instance:

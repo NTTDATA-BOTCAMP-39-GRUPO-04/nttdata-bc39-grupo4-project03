@@ -22,7 +22,6 @@ public class ProductController {
 
     @GetMapping(value = "/findAll")
     public Flux<ProductDTO> getAllProducts() {
-        LOG.error("Error, El Producto que intenta consultar es inválido");
         return productService.getAllProducts();
     }
 

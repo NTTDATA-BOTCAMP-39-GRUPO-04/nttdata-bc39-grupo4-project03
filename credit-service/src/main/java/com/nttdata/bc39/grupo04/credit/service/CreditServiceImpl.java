@@ -39,7 +39,13 @@ public class CreditServiceImpl implements CreditService {
         validateCreateCredit(dto);
         CreditEntity entity = mapper.dtoToEntity(dto);
         entity.setCreditNumber(generateCreditNumber());
-        entity.setAvailableBalance(entity.getCreditAmount());
+        if (dto.getProductId().equals(CODE_PRODUCT_CREDITO_PERSONAL)
+                || dto.getProductId().equals(CODE_PRODUCT_CREDITO_EMPRESARIAL)) {
+        	entity.setAvailableBalance(0);
+        }
+        else {
+        	entity.setAvailableBalance(entity.getCreditAmount());
+        }        
         entity.setCreateDate(Calendar.getInstance().getTime());
         return repository.save(entity)
                 .onErrorMap(DuplicateKeyException.class,
