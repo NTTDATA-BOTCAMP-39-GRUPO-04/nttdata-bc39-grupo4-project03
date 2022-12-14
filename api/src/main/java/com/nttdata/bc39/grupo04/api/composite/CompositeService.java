@@ -1,10 +1,15 @@
 package com.nttdata.bc39.grupo04.api.composite;
 
+import org.springframework.web.bind.annotation.PathVariable;
+
 import com.nttdata.bc39.grupo04.api.account.AccountDTO;
 import com.nttdata.bc39.grupo04.api.account.DebitCardDTO;
 import com.nttdata.bc39.grupo04.api.account.DebitCardNumberDTO;
 import com.nttdata.bc39.grupo04.api.account.DebitCardPaymentDTO;
+import com.nttdata.bc39.grupo04.api.account.DebitCardReportDTO;
+import com.nttdata.bc39.grupo04.api.credit.CreditCardReportDTO;
 import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
+import com.nttdata.bc39.grupo04.api.customer.ConsolidatedSummaryDTO;
 import com.nttdata.bc39.grupo04.api.customer.CustomerDto;
 import com.nttdata.bc39.grupo04.api.movements.MovementsReportDTO;
 import com.nttdata.bc39.grupo04.api.product.ProductDTO;
@@ -43,6 +48,12 @@ public interface CompositeService {
     Flux<AvailableAmountDailyDTO> getAvailableAmountDaily(String customerId);
 
     Flux<ComissionReportDTO> getAllComissionByProduct(String fechStart, String fechEnd);
+    
+    Mono<DebitCardReportDTO> getLastTenDebitCardMovements(String debitCardNumber);
+    
+	Mono<CreditCardReportDTO> getLastTenCreditCardMovements(String debitCardNumber);
+	
+	Mono<ConsolidatedSummaryDTO> getConsolidatedSummary(String customerId);
 
     // Credit
 
@@ -52,7 +63,7 @@ public interface CompositeService {
 
     Flux<CreditDTO> getAllCreditByCustomer(String customerId);
 
-    Mono<CreditDTO> makePaymentCredit(double amount, String creditNumber);
+    Mono<CreditDTO> makePaymentCredit(double amount, String creditNumber, String payingCustomerId);
 
     Mono<CreditDTO> makePaymentCreditCard(double amount, String creditCardNumber);
 

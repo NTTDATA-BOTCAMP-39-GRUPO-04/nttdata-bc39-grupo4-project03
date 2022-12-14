@@ -4,8 +4,11 @@ import com.nttdata.bc39.grupo04.api.account.AccountDTO;
 import com.nttdata.bc39.grupo04.api.account.DebitCardDTO;
 import com.nttdata.bc39.grupo04.api.account.DebitCardNumberDTO;
 import com.nttdata.bc39.grupo04.api.account.DebitCardPaymentDTO;
+import com.nttdata.bc39.grupo04.api.account.DebitCardReportDTO;
 import com.nttdata.bc39.grupo04.api.composite.*;
+import com.nttdata.bc39.grupo04.api.credit.CreditCardReportDTO;
 import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
+import com.nttdata.bc39.grupo04.api.customer.ConsolidatedSummaryDTO;
 import com.nttdata.bc39.grupo04.api.customer.CustomerDto;
 import com.nttdata.bc39.grupo04.api.exceptions.BadRequestException;
 import com.nttdata.bc39.grupo04.api.exceptions.InvaliteInputException;
@@ -16,6 +19,7 @@ import com.nttdata.bc39.grupo04.api.product.ProductDTO;
 import com.nttdata.bc39.grupo04.api.utils.CodesEnum;
 import com.nttdata.bc39.grupo04.api.utils.Constants;
 import com.nttdata.bc39.grupo04.api.utils.DateUtils;
+
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -289,18 +293,68 @@ public class CompositeServiceImpl implements CompositeService {
     }
 
     @Override
-    public Mono<CreditDTO> makePaymentCredit(double amount, String creditNumber) {
-        return integration.makePaymentCredit(amount, creditNumber);
+    public Mono<CreditDTO> makePaymentCredit(double amount, String creditNumber, String payingCustomerId) {
+    	CreditDTO dto = integration.getByCreditNumber(creditNumber).block();
+    	List<MovementsReportDTO> list  = integration.getAllMovementsByNumberAccount(creditNumber).collectList().block();
+    	double addedAmount=0.0;
+    	for (MovementsReportDTO movementsReportDTO : list) {
+    		addedAmount = addedAmount + movementsReportDTO.getAmount();
+		}
+    	validatePaymentCredit(dto, amount, creditNumber,addedAmount);
+    	MovementsDTO movementsDTO = new MovementsDTO();
+    	movementsDTO.setAccount(creditNumber);
+    	movementsDTO.setTransferAccount(creditNumber);
+    	movementsDTO.setProductId(dto.getProductId());
+    	movementsDTO.setAmount(amount);
+    	movementsDTO.setDate(Calendar.getInstance().getTime());  
+    	if(!ObjectUtils.isEmpty(payingCustomerId)) {
+    		CustomerDto customerDto = integration.getCustomerById(payingCustomerId).block();
+    		if(!ObjectUtils.isEmpty(customerDto)) {
+    			movementsDTO.setPayingCustomer(payingCustomerId);
+    		}
+    	}
+    	integration.saveCreditMovement(movementsDTO);    	
+        return Mono.just(dto);
     }
-
+    
     @Override
     public Mono<CreditDTO> makePaymentCreditCard(double amount, String creditCardNumber) {
-        return integration.makePaymentCreditCard(amount, creditCardNumber);
+    	CreditDTO dto = integration.getCreditCardByNumber(creditCardNumber).block();
+    	List<MovementsReportDTO> list  = integration.getAllMovementsByNumberAccount(dto.getCreditNumber()).collectList().block();
+    	double addedAmount=0.0;
+    	for (MovementsReportDTO movementsReportDTO : list) {
+    		addedAmount = addedAmount + movementsReportDTO.getAmount();
+		}
+    	validatePaymentCreditCard(dto, amount, creditCardNumber,addedAmount);
+    	MovementsDTO movementsDTO = new MovementsDTO();
+    	movementsDTO.setAccount(dto.getCreditNumber());
+    	movementsDTO.setTransferAccount(dto.getCreditNumber());
+    	movementsDTO.setProductId(dto.getProductId());
+    	movementsDTO.setAmount(amount);
+    	movementsDTO.setDate(Calendar.getInstance().getTime());  
+    	integration.savePaymentCreditCardMovement(movementsDTO);	
+        return Mono.just(dto);
     }
-
+    
+    
     @Override
     public Mono<CreditDTO> makeChargeCredit(double amount, String creditCardNumber) {
-        return integration.makeChargeCredit(amount, creditCardNumber);
+    	CreditDTO dto = integration.getCreditCardByNumber(creditCardNumber).block();
+    	List<MovementsReportDTO> list  = integration.getAllMovementsByNumberAccount(dto.getCreditNumber()).collectList().block();
+    	double addedAmount=0.0;
+    	for (MovementsReportDTO movementsReportDTO : list) {
+    		addedAmount = addedAmount + movementsReportDTO.getAmount();
+		}
+    	validatePaymentCreditCard(dto, amount, creditCardNumber,addedAmount);
+    	MovementsDTO movementsDTO = new MovementsDTO();
+    	movementsDTO.setAccount(dto.getCreditNumber());
+    	movementsDTO.setTransferAccount(dto.getCreditNumber());
+    	movementsDTO.setProductId(dto.getProductId());
+    	movementsDTO.setAmount(amount);
+    	movementsDTO.setDate(Calendar.getInstance().getTime());  
+    	integration.saveChargeCreditCardMovement(movementsDTO);	
+    	movementsDTO.setAvailableBalance(0.0);
+        return Mono.just(dto);
     }
 
     @Override
@@ -386,5 +440,84 @@ public class CompositeServiceImpl implements CompositeService {
 
         }
     }
+    
+    private void validatePaymentCredit(CreditDTO dto, double amount,String creditNumber, double addedAmount) {
+        if (ObjectUtils.isEmpty(dto)) {
+            throw new NotFoundException("Error, no existe el credito con Nro: " + creditNumber);
+        }
+        if (addedAmount == dto.getCreditAmount()) {
+            throw new InvaliteInputException("No tiene pagos pendientes");
+        }
+
+        if (amount < MIN_PAYMENT_CREDIT_AMOUNT || amount > dto.getCreditAmount()) {
+            throw new InvaliteInputException(
+                    String.format(Locale.getDefault(), "Error, los limites de Pago son min: %d sol y max: %f sol",
+                            MIN_PAYMENT_CREDIT_AMOUNT, dto.getCreditAmount()));
+        }
+        
+        if ((addedAmount+amount) > dto.getCreditAmount()) {
+            double suggestedAmount = dto.getCreditAmount() - addedAmount;
+            throw new InvaliteInputException(
+                    "El monto que intenta pagar excede el monto Total que debe pagar. Monto a pagar: " + suggestedAmount);
+        }
+    }
+    
+    
+    private void validatePaymentCreditCard(CreditDTO dto, double amount, String creditCardNumber, double addedAmount) {
+        if (ObjectUtils.isEmpty(dto)) {
+            throw new NotFoundException("Error, no existe la tarjeta de credito con Nro: " + creditCardNumber);
+        }
+        if (addedAmount == dto.getCreditAmount()) {
+            throw new InvaliteInputException("No tiene pagos pendientes");
+        }
+
+        if (amount < MIN_PAYMENT_CREDIT_CARD_AMOUNT || amount > dto.getCreditAmount()) {
+            throw new InvaliteInputException(
+                    String.format(Locale.getDefault(), "Error, los limites de Pago son min: %d sol y max: %f sol",
+                            MIN_PAYMENT_CREDIT_CARD_AMOUNT, dto.getCreditAmount()));
+        }
+
+        if ((dto.getCreditAmount() +addedAmount+amount) > dto.getCreditAmount()) {
+            throw new InvaliteInputException(
+                    "El monto que intenta pagar excede el monto Total que debe pagar." );
+        }
+    }
+
+	@Override
+	public Mono<DebitCardReportDTO> getLastTenDebitCardMovements(String debitCardNumber) {
+		AccountDTO acouMono = getMainAccountByDebitCardNumber(debitCardNumber).block();
+
+        Flux<MovementsReportDTO> movementsAll = integration.getAllMovementsByNumberAccount(acouMono.getAccount()).sort(Comparator.comparing(MovementsReportDTO::getDate).reversed());              
+        List<MovementsReportDTO> listMovementsReportDTO = movementsAll.toStream().collect(Collectors.toList());
+        DebitCardReportDTO debitCardReportDTO = new DebitCardReportDTO();
+        debitCardReportDTO.setDebitCardNumber(debitCardNumber);
+        debitCardReportDTO.setMovements(listMovementsReportDTO);
+        return Mono.just(debitCardReportDTO);
+	}
+	
+	@Override
+	public Mono<CreditCardReportDTO> getLastTenCreditCardMovements(String creditCardNumber) {	
+		CreditDTO creditDTO = integration.getCreditCardByNumber(creditCardNumber).block();
+
+        Flux<MovementsReportDTO> movementsAll = integration.getAllMovementsByNumberAccount(creditDTO.getCreditNumber()).sort(Comparator.comparing(MovementsReportDTO::getDate).reversed());              
+        List<MovementsReportDTO> listMovementsReportDTO = movementsAll.toStream().collect(Collectors.toList());
+        CreditCardReportDTO dto = new CreditCardReportDTO();
+        dto.setCreditCardNumber(creditCardNumber);
+        dto.setMovements(listMovementsReportDTO);
+        return Mono.just(dto);
+	}
+	
+	@Override
+	public Mono<ConsolidatedSummaryDTO> getConsolidatedSummary(String customerId){
+		ConsolidatedSummaryDTO consolidatedSummaryDTO = new ConsolidatedSummaryDTO();
+		CustomerDto customerDto = integration.getCustomerById(customerId).block();
+		List<CreditDTO> creditDTOs = integration.getAllCreditByCustomer(customerId).toStream().collect(Collectors.toList());
+		List<AccountDTO> accountDTOs = integration.getAllAccountByCustomer(customerId).toStream().collect(Collectors.toList());
+		
+		consolidatedSummaryDTO.setCustomer(customerDto);
+		consolidatedSummaryDTO.setAccounts(accountDTOs);
+		consolidatedSummaryDTO.setCredits(creditDTOs);
+		return Mono.just(consolidatedSummaryDTO);
+	}
 
 }

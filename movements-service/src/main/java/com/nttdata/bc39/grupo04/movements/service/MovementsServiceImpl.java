@@ -13,7 +13,9 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Objects;
 
 @Service
@@ -69,6 +71,43 @@ public class MovementsServiceImpl implements MovementsService {
         if (Objects.isNull(dto.getTransferAccount())) {
             throw new InvaliteInputException("Error , cuenta transferencia es invalida.");
         }
+    }
+    
+    @Override
+    public Mono<MovementsDTO> saveCreditMovement(MovementsDTO dto) {
+        validationMovement(dto, CodesEnum.TYPE_CREDIT);
+        MovementsEntity entity = mapper.dtoToEntity(dto);
+        entity.setNumber(generateMovementsNumber());
+        entity.setDate(Calendar.getInstance().getTime());
+        return repository.save(entity)
+                .map(mapper::entityToDto);
+    }
+    
+    @Override
+    public Mono<MovementsDTO> savePaymentCreditCardMovement(MovementsDTO dto) { 
+        validationMovement(dto, CodesEnum.TYPE_CREDIT);
+        MovementsEntity entity = mapper.dtoToEntity(dto);
+        entity.setNumber(generateMovementsNumber());
+        entity.setDate(Calendar.getInstance().getTime());
+        return repository.save(entity)
+                .map(mapper::entityToDto);
+    }
+
+    @Override
+    public Mono<MovementsDTO> saveChargeCreditCardMovement(MovementsDTO dto) {
+        validationMovement(dto, CodesEnum.TYPE_CREDIT);
+        dto.setAmount(dto.getAmount() * -1);
+        MovementsEntity entity = mapper.dtoToEntity(dto);
+        entity.setNumber(generateMovementsNumber());
+        entity.setDate(Calendar.getInstance().getTime());
+        return repository.save(entity)
+                .map(mapper::entityToDto);
+    }
+    
+    private String generateMovementsNumber() {
+    	Date todayDate = new Date();
+    	SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
+    	return System.currentTimeMillis() + sdf.format(todayDate);
     }
 
 }

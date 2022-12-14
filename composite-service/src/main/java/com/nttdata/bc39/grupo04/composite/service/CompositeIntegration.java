@@ -131,6 +131,51 @@ public class CompositeIntegration implements MovementsService, AccountService, C
             throw handleHttpClientException(ex);
         }
     }
+    
+    @Override
+    public Mono<MovementsDTO> saveCreditMovement(MovementsDTO dto) {
+        String url = urlMovementsService + "/credit";
+        try {
+            MovementsDTO movementsDTO = restTemplate.postForObject(url, dto, MovementsDTO.class);
+            if (Objects.isNull(movementsDTO)) {
+                throw new BadRequestException("Error, no se pudo establecer conexión con  la url:" + url);
+            }
+            return Mono.just(movementsDTO);
+        } catch (HttpClientErrorException ex) {
+            logger.warn("Got exception while CompositeIntegration::saveCreditMovement: " + ex.getMessage());
+            throw handleHttpClientException(ex);
+        }
+    }
+    
+    @Override
+    public Mono<MovementsDTO> savePaymentCreditCardMovement(MovementsDTO dto) {
+        String url = urlMovementsService + "/paymentCreditCard";
+        try {
+            MovementsDTO movementsDTO = restTemplate.postForObject(url, dto, MovementsDTO.class);
+            if (Objects.isNull(movementsDTO)) {
+                throw new BadRequestException("Error, no se pudo establecer conexión con  la url:" + url);
+            }
+            return Mono.just(movementsDTO);
+        } catch (HttpClientErrorException ex) {
+            logger.warn("Got exception while CompositeIntegration::savePaymentCreditCardMovement: " + ex.getMessage());
+            throw handleHttpClientException(ex);
+        }
+    }
+    
+    @Override
+    public Mono<MovementsDTO> saveChargeCreditCardMovement(MovementsDTO dto) {
+        String url = urlMovementsService + "/chargeCreditCard";
+        try {
+            MovementsDTO movementsDTO = restTemplate.postForObject(url, dto, MovementsDTO.class);
+            if (Objects.isNull(movementsDTO)) {
+                throw new BadRequestException("Error, no se pudo establecer conexión con  la url:" + url);
+            }
+            return Mono.just(movementsDTO);
+        } catch (HttpClientErrorException ex) {
+            logger.warn("Got exception while CompositeIntegration::saveChargeCreditMovement: " + ex.getMessage());
+            throw handleHttpClientException(ex);
+        }
+    }
 
     // Acount
     @Override
@@ -536,4 +581,20 @@ public class CompositeIntegration implements MovementsService, AccountService, C
         }
     }
 
+	@Override
+	public Mono<CreditDTO> getCreditCardByNumber(String creditCardNumber) {
+        String url = urlCreditService + "/getCreditCardByNumber/" + creditCardNumber;
+        try {
+            CreditDTO dto = restTemplate.exchange(url, HttpMethod.GET, null, new ParameterizedTypeReference<CreditDTO>() {
+            }).getBody();
+
+            if (Objects.isNull(dto)) {
+                throw new BadRequestException("Error, no se pudo establecer connexion con la url:" + url);
+            }
+            return Mono.just(dto);
+        } catch (HttpClientErrorException ex) {
+            logger.warn("Got exception while make CompositeIntegration::getByCreditNumber:  " + ex.getMessage());
+            throw handleHttpClientException(ex);
+        }
+	}
 }

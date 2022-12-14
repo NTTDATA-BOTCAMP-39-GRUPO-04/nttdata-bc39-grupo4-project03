@@ -211,5 +211,10 @@ public class CreditServiceImpl implements CreditService {
                         x -> x.getProductId().equals(CODE_PRODUCT_TARJETA_CREDITO) && x.getCustomerId().equals(customerId))
                 .map(mapper::entityToDto);
     }
+    
+    @Override
+    public Mono<CreditDTO> getCreditCardByNumber(String creditCardNumber) {
+        return repository.findByCardNumber(creditCardNumber).map(mapper::entityToDto);
+    }
 
 }

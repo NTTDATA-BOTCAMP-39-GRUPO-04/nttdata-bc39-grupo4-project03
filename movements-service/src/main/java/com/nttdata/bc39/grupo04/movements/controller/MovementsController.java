@@ -35,4 +35,19 @@ public class MovementsController {
     Flux<MovementsReportDTO> getAllMovements() {
         return service.getAllMovements();
     }
+    
+    @PostMapping("/credit")
+    Mono<MovementsDTO> saveCreditMovement(@RequestBody MovementsDTO body) {
+        return service.saveCreditMovement(body);
+    }
+    
+    @PostMapping("/paymentCreditCard")
+    Mono<MovementsDTO> savePaymentCreditCardMovement(@RequestBody MovementsDTO body) {
+        return service.savePaymentCreditCardMovement(body);
+    }
+    
+    @PostMapping("/chargeCreditCard")
+    Mono<MovementsDTO> saveChargeCreditCardMovement(@RequestBody MovementsDTO body) {
+        return service.saveChargeCreditCardMovement(body);
+    }
 }

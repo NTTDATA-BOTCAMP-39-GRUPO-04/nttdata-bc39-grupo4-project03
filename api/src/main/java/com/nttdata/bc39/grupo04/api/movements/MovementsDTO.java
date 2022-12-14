@@ -17,4 +17,6 @@ public class MovementsDTO {
     private double comission;
     private double availableBalance;
     private Date date;
+    private String number;
+    private String payingCustomer;
 }

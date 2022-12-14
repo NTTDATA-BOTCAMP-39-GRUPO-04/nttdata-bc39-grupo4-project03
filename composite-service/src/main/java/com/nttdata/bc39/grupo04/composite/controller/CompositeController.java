@@ -4,8 +4,11 @@ import com.nttdata.bc39.grupo04.api.account.AccountDTO;
 import com.nttdata.bc39.grupo04.api.account.DebitCardDTO;
 import com.nttdata.bc39.grupo04.api.account.DebitCardNumberDTO;
 import com.nttdata.bc39.grupo04.api.account.DebitCardPaymentDTO;
+import com.nttdata.bc39.grupo04.api.account.DebitCardReportDTO;
 import com.nttdata.bc39.grupo04.api.composite.*;
+import com.nttdata.bc39.grupo04.api.credit.CreditCardReportDTO;
 import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
+import com.nttdata.bc39.grupo04.api.customer.ConsolidatedSummaryDTO;
 import com.nttdata.bc39.grupo04.api.customer.CustomerDto;
 import com.nttdata.bc39.grupo04.api.movements.MovementsReportDTO;
 import com.nttdata.bc39.grupo04.api.product.ProductDTO;
@@ -75,6 +78,22 @@ public class CompositeController {
     Mono<AccountDTO> createAccount(@RequestBody AccountDTO dto) {
         return service.createAccount(dto);
     }
+    
+    @GetMapping("/report/lastTenDebitCard/{debitCardNumber}")
+    Mono<DebitCardReportDTO> getLastTenDebitCardMovements(@PathVariable("debitCardNumber") String debitCardNumber){
+        return service.getLastTenDebitCardMovements(debitCardNumber);
+    }
+    
+    @GetMapping("/report/lastTenCreditCard/{creditCardNumber}")
+    Mono<CreditCardReportDTO> getLastTenCreditCardMovements(@PathVariable("creditCardNumber") String creditCardNumber){
+        return service.getLastTenCreditCardMovements(creditCardNumber);
+    }
+    
+    @GetMapping("/report/consolidatedSummary/{customerId}")
+    Mono<ConsolidatedSummaryDTO> getConsolidatedSummary(@PathVariable("customerId") String customerId){
+        return service.getConsolidatedSummary(customerId);
+    }
+
 
     @GetMapping("/customer/all")
     Flux<CustomerDto> getAllCustomer() {
@@ -115,7 +134,14 @@ public class CompositeController {
 	@PutMapping("/credit/paymentcredit/{creditNumber}")
 	Mono<CreditDTO> makePaymentCredit(@PathVariable(value = "creditNumber") String creditNumber,
 			@RequestParam(value = "amount") double amount) {
-		return service.makePaymentCredit(amount, creditNumber);
+		return service.makePaymentCredit(amount, creditNumber,"");
+	}
+	
+	@PutMapping("/credit/thirdpartycreditpayment/{creditNumber}/{customerId}")
+	Mono<CreditDTO> thirdPartyCreditPayment(@PathVariable(value = "creditNumber") String creditNumber,
+			@PathVariable(value = "customerId") String customerId,
+			@RequestParam(value = "amount") double amount) {
+		return service.makePaymentCredit(amount, creditNumber,customerId);
 	}
 	
 	@PutMapping("/credit/paymentcreditcard/{creditCardNumber}")

@@ -13,4 +13,10 @@ public interface MovementsService {
     Flux<MovementsReportDTO> getAllMovementsByNumberAccount(String accountNumber);
 
     Flux<MovementsReportDTO> getAllMovements();
+    
+    Mono<MovementsDTO> saveCreditMovement(MovementsDTO dto);
+    
+    Mono<MovementsDTO> savePaymentCreditCardMovement(MovementsDTO dto);
+    
+    Mono<MovementsDTO> saveChargeCreditCardMovement(MovementsDTO dto);
 }

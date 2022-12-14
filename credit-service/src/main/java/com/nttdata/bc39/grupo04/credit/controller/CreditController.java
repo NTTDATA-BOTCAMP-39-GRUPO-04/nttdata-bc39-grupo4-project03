@@ -65,4 +65,9 @@ public class CreditController {
 	Flux<CreditDTO> getAllCreditCardByCustomer(@PathVariable(value = "customerId") String customerId) {
 		return service.getAllCreditCardByCustomer(customerId);
 	}
+	
+	@GetMapping(value = "/getCreditCardByNumber/{creditCardNumber}")
+	Mono<CreditDTO> getCreditCardByNumber(@PathVariable(value = "creditCardNumber") String creditCardNumber) {
+		return service.getCreditCardByNumber(creditCardNumber);
+	}
 }

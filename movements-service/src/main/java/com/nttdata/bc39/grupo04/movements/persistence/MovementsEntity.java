@@ -24,5 +24,7 @@ public class MovementsEntity {
     private double totalAmount;
     private double availableBalance;
     private Date date;
+    private String number;
+    private String payingCustomer;
 
 }
