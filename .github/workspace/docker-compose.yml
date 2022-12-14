@@ -1,0 +1,141 @@
+version: '2.1'
+services:
+
+  config-server:
+    build: config-server
+    mem_limit: 512m
+    ports:
+      - "9097:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  eureka-server:
+    build: eureka-server
+    mem_limit: 512m
+    ports:
+      - "8761:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      config-server:
+        condition: service_started
+
+  gateway-service:
+    build: gateway-service
+    mem_limit: 512m
+    ports:
+      - "8090:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      config-server:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+
+  account-service:
+    build: account-service
+    mem_limit: 512m
+    ports:
+      - "9092:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      mongodocker:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+
+  movements-service:
+    build: movements-service
+    mem_limit: 512m
+    ports:
+      - "9095:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      mongodocker:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+
+  customer-service:
+    build: customer-service
+    mem_limit: 512m
+    ports:
+      - "9091:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      mongodocker:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+
+  product-service:
+    build: product-service
+    mem_limit: 512m
+    ports:
+      - "9093:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      mongodocker:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+
+  credit-service:
+    build: credit-service
+    mem_limit: 512m
+    ports:
+      - "9094:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      mongodocker:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+
+  composite-service:
+    build: composite-service
+    mem_limit: 512m
+    ports:
+      - "9096:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      mongodocker:
+        condition: service_healthy
+      config-server:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+      account-service:
+        condition: service_started
+      movements-service:
+        condition: service_started
+      customer-service:
+        condition: service_started
+
+  mongodocker:
+    image: mongo:4.4.2
+    mem_limit: 512m
+    ports:
+      - "27018:27017"
+    healthcheck:
+      test: "mongo --eval 'db.stats().ok'"
+      interval: 5s
+      timeout: 2s
+      retries: 60
