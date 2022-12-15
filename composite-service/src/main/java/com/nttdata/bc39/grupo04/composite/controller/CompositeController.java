@@ -11,6 +11,7 @@ import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
 import com.nttdata.bc39.grupo04.api.customer.ConsolidatedSummaryDTO;
 import com.nttdata.bc39.grupo04.api.customer.CustomerDto;
 import com.nttdata.bc39.grupo04.api.movements.MovementsReportDTO;
+import com.nttdata.bc39.grupo04.api.product.GeneralReportDTO;
 import com.nttdata.bc39.grupo04.api.product.ProductDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -93,7 +94,13 @@ public class CompositeController {
     Mono<ConsolidatedSummaryDTO> getConsolidatedSummary(@PathVariable("customerId") String customerId){
         return service.getConsolidatedSummary(customerId);
     }
-
+    
+    @GetMapping("/report/general/{productId}")
+    Mono<GeneralReportDTO> getReportGeneral(@PathVariable("productId") String productId,
+    		@RequestParam("startDate") String startDate,
+            @RequestParam("endDate") String endDate){
+        return service.getReportGeneral(startDate,endDate,productId);
+    }
 
     @GetMapping("/customer/all")
     Flux<CustomerDto> getAllCustomer() {

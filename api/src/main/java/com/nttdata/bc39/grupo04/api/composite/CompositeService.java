@@ -12,6 +12,7 @@ import com.nttdata.bc39.grupo04.api.credit.CreditDTO;
 import com.nttdata.bc39.grupo04.api.customer.ConsolidatedSummaryDTO;
 import com.nttdata.bc39.grupo04.api.customer.CustomerDto;
 import com.nttdata.bc39.grupo04.api.movements.MovementsReportDTO;
+import com.nttdata.bc39.grupo04.api.product.GeneralReportDTO;
 import com.nttdata.bc39.grupo04.api.product.ProductDTO;
 
 import reactor.core.publisher.Flux;
@@ -54,6 +55,8 @@ public interface CompositeService {
 	Mono<CreditCardReportDTO> getLastTenCreditCardMovements(String debitCardNumber);
 	
 	Mono<ConsolidatedSummaryDTO> getConsolidatedSummary(String customerId);
+	
+    Mono<GeneralReportDTO> getReportGeneral(String fechStart, String fechEnd, String productId);
 
     // Credit
 

@@ -15,6 +15,7 @@ import com.nttdata.bc39.grupo04.api.exceptions.InvaliteInputException;
 import com.nttdata.bc39.grupo04.api.exceptions.NotFoundException;
 import com.nttdata.bc39.grupo04.api.movements.MovementsDTO;
 import com.nttdata.bc39.grupo04.api.movements.MovementsReportDTO;
+import com.nttdata.bc39.grupo04.api.product.GeneralReportDTO;
 import com.nttdata.bc39.grupo04.api.product.ProductDTO;
 import com.nttdata.bc39.grupo04.api.utils.CodesEnum;
 import com.nttdata.bc39.grupo04.api.utils.Constants;
@@ -519,5 +520,26 @@ public class CompositeServiceImpl implements CompositeService {
 		consolidatedSummaryDTO.setCredits(creditDTOs);
 		return Mono.just(consolidatedSummaryDTO);
 	}
+	
+    @Override
+    public Mono<GeneralReportDTO> getReportGeneral(String fechStart, String fechEnd, String productId) {
+        if (Objects.isNull(fechStart) || Objects.isNull(fechEnd)) {
+            throw new InvaliteInputException("Error, las fechas ingresadas son invalidad , formato requerido : dd/mm/yyyy");
+        }
+        Date startDate = DateUtils.convertStringToDate(fechStart);
+        Date endDate = DateUtils.convertStringToDate(fechEnd);
+        if (Objects.isNull(startDate) || Objects.isNull(endDate)) {
+            throw new InvaliteInputException("Error, las fechas ingresadas son invalidad , formato requerido : dd/mm/yyyy");
+        }
+        
+        ProductDTO productDTO = integration.getProductByCode(productId).block();
+        Flux<MovementsReportDTO> movementsAll = integration.getAllMovements().filter(x -> x.getDate().compareTo(startDate) >= 0 && x.getDate().compareTo(endDate) <= 0 && x.getProductId().equals(productId));
+        List<MovementsReportDTO> listMovementsReportDTO = movementsAll.toStream().collect(Collectors.toList());
+        
+        GeneralReportDTO generalReportDTO = new GeneralReportDTO();
+        generalReportDTO.setProduct(productDTO);
+        generalReportDTO.setMovements(listMovementsReportDTO);
+        return Mono.just(generalReportDTO);
+    }
 
 }
